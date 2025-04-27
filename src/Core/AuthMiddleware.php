@@ -29,6 +29,15 @@ class AuthMiddleware {
             return false;
         }
         
+        // Create user object and set in application state
+        $user = new User();
+        $user->id = $payload['sub'];
+        $user->name = $payload['name'];
+        $user->email = $payload['email'];
+        
+        // Set the user in the application state
+        Application::getInstance()->setState('user', $user);
+        
         return true;
     }
 }

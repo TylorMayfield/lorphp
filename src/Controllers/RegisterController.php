@@ -29,6 +29,11 @@ class RegisterController extends Controller
      */
     public function index() 
     {
+        // Redirect if user is already logged in
+        if ($this->app->getState('user')) {
+            return $this->redirectTo('/');
+        }
+
         // Load the auth config
         $config = $this->config;
         

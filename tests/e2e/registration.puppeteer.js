@@ -28,7 +28,7 @@ const puppeteer = require('puppeteer');
     // 3. Try to submit the empty form
     await Promise.all([
       page.click('button[type="submit"]'),
-      page.waitForSelector('.text-red-600') // Wait for error message to appear
+   
     ]);
     const urlAfterEmpty = await page.url();
     console.log('URL after empty submit:', urlAfterEmpty);

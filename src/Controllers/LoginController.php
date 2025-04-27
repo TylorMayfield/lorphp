@@ -29,6 +29,11 @@ class LoginController extends Controller
      */
     public function index() 
     {
+        // Redirect if user is already logged in
+        if ($this->app->getState('user')) {
+            return $this->redirectTo('/');
+        }
+
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             return $this->handleLogin();
         }
@@ -73,7 +78,7 @@ class LoginController extends Controller
         if ($token) {
             // Set JWT token in HTTP-only cookie
             setcookie('jwt', $token, [
-                'expires' => time() + (60 * 60 * 24), // 24 hours
+                'expires' => time() + (60 * 60 * 72), // 72 hours
                 'path' => '/',
                 'httponly' => true,
                 'samesite' => 'Strict',

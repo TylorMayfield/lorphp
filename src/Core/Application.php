@@ -55,6 +55,9 @@ class Application {
     }
 
     public function run() {
+        // Check authentication status early
+        AuthMiddleware::handle();
+        
         $router = new Router();
         
         // Configure routes
