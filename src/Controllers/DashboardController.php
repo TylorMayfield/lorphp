@@ -1,28 +1,17 @@
 <?php
 namespace LorPHP\Controllers;
 
-use LorPHP\Core\Page;
-use LorPHP\Core\Application;
+use LorPHP\Core\Controller;
 
-class DashboardController {
-    private $app;
-    private $page;
-
+class DashboardController extends Controller {
     public function __construct() {
-        $this->app = Application::getInstance();
-        $this->page = new Page();
-        
-        // Check authentication
-        if (!$this->app->getState('user')) {
-            header('Location: /login');
-            exit;
-        }
+        parent::__construct();
+        $this->requireAuth();
     }
 
     public function index() {
-        $user = $this->app->getState('user');
-        $this->page->setTitle('Dashboard - LorPHP')
-                  ->setData('user', $user)
-                  ->render('dashboard');
+        return $this->view('dashboard', [
+            'title' => 'Dashboard - LorPHP'
+        ]);
     }
 }

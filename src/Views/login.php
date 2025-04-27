@@ -14,7 +14,9 @@ ob_start();
         'type' => 'email',
         'label' => 'Email address',
         'required' => true,
-        'class' => 'rounded-t-md'
+        'value' => isset($value) && is_array($value) ? ($value['email'] ?? '') : '',
+        'class' => 'rounded-t-md',
+        'error' => $error ?? null
     ]); ?>
 
     <?php $this->partial('forms/input', [
@@ -22,15 +24,9 @@ ob_start();
         'type' => 'password',
         'label' => 'Password',
         'required' => true,
-        'class' => 'rounded-b-md'
+        'class' => 'rounded-b-md',
+        'error' => $error ?? null
     ]); ?>
-
-    <div class="flex items-center justify-between">
-        <div class="flex items-center">
-            <input id="remember_me" name="remember_me" type="checkbox" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
-            <label for="remember_me" class="ml-2 block text-sm text-gray-900">Remember me</label>
-        </div>
-    </div>
 
     <div>
         <button type="submit" class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
@@ -39,14 +35,14 @@ ob_start();
     </div>
 </form>
 <?php
-$formContent = ob_get_clean();
+$content = ob_get_clean();
 
 $this->partial('components/auth-container', [
     'title' => 'Sign in to your account',
     'subtitle' => 'Or',
     'linkText' => 'create a new account',
     'linkUrl' => '/register',
-    'content' => $formContent
+    'content' => $content
 ]);
 
 

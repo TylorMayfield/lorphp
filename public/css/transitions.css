@@ -1,0 +1,27 @@
+/* Base transition duration */
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation-duration: 0.5s;
+}
+
+/* Auth container transitions */
+.auth-container {
+    view-transition-name: auth;
+}
+
+::view-transition-old(auth),
+::view-transition-new(auth) {
+    animation-duration: 0.4s;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Dashboard transitions */
+.dashboard-content {
+    view-transition-name: dashboard;
+}
+
+::view-transition-old(dashboard),
+::view-transition-new(dashboard) {
+    animation-duration: 0.3s;
+    animation-timing-function: ease-in-out;
+}

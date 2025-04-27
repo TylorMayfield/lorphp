@@ -3,7 +3,8 @@
  * Dashboard page view - Auth required
  */
 $this->setLayout('base');
-?>    <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+?>    
+<div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8 dashboard-content">
         <!-- Stats Overview -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <?php $this->partial('components/stats-card', [

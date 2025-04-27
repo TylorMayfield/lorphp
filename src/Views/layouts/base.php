@@ -8,21 +8,67 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>LorPHP Framework</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <?php $this->renderStyles(); ?>
-    <?php $this->renderScripts(); ?>
-</head>
-<body class="bg-gray-100">    <?php $this->renderNavigation(); ?>
-    <?php echo $this->renderContent(); ?>
+    <meta name="view-transition" content="same-origin">
+    <title><?php echo isset($title) ? htmlspecialchars($title) : 'LorPHP Framework'; ?></title>
     
+    <!-- Base path for all assets -->
+    <base href="/" />
+    
+    <!-- TailwindCSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Custom styles -->
+    <?php 
+    try {
+        $this->renderStyles();
+        echo "<!-- Debug: Styles rendered successfully -->\n";
+    } catch (\Throwable $e) {
+        echo "<!-- Debug: Styles render error: " . htmlspecialchars($e->getMessage()) . " -->\n";
+    }
+    ?>
+    
+    <!-- Scripts -->
+    <?php 
+    try {
+        $this->renderScripts();
+        echo "<!-- Debug: Scripts rendered successfully -->\n";
+    } catch (\Throwable $e) {
+        echo "<!-- Debug: Scripts render error: " . htmlspecialchars($e->getMessage()) . " -->\n";
+    }
+    ?>
+</head>
+<body class="bg-gray-100">
+    <!-- Navigation -->
+    <?php 
+    try {
+        $this->renderNavigation();
+        echo "<!-- Debug: Navigation rendered successfully -->\n";
+    } catch (\Throwable $e) {
+        echo "<!-- Debug: Navigation render error: " . htmlspecialchars($e->getMessage()) . " -->\n";
+    }
+    ?>
+    
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <?php 
+        try {
+            echo $this->renderContent();
+            echo "<!-- Debug: Main content rendered successfully -->\n";
+        } catch (\Throwable $e) {
+            echo "<!-- Debug: Main content render error: " . htmlspecialchars($e->getMessage()) . " -->\n";
+        }
+        ?>
+    </main>
+    
+    <!-- Footer -->
     <footer class="bg-white mt-20 py-8">
         <div class="max-w-6xl mx-auto px-4 text-center text-gray-600">
             <p>&copy; <?php echo date('Y'); ?> LorPHP Framework. All rights reserved.</p>
         </div>
     </footer>
     
-    <?php if ($this->debug): ?>
+    <!-- Debug Bar -->
+    <?php if (isset($debug) && $debug): ?>
         <?php $this->renderDebugBar(); ?>
     <?php endif; ?>
 </body>

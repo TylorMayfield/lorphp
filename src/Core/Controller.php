@@ -13,7 +13,7 @@ abstract class Controller {
     }
 
     protected function requireAuth() {
-        if (!$this->user) {
+        if (!AuthMiddleware::handle()) {
             header('Location: /login');
             exit;
         }
@@ -48,5 +48,18 @@ abstract class Controller {
     protected function withError($message) {
         $this->app->setState('flash_error', $message);
         return $this;
+    }
+
+    /**
+     * Debug logging helper method
+     * 
+     * @param string $message The message to log
+     * @param array $context Additional context data
+     */
+    protected function debugLog($message, array $context = []) {
+        if ($this->app->getConfig('app.debug', false)) {
+            $contextStr = !empty($context) ? " Context: " . print_r($context, true) : "";
+            error_log("[Controller Debug] " . $message . $contextStr);
+        }
     }
 }

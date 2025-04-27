@@ -3,7 +3,7 @@
  * Common styles partial
  */
 ?>
-<link href="https://cdn.tailwindcss.com" rel="stylesheet">
+<link href="/css/transitions.css" rel="stylesheet">
 <style>
     /* Add any custom styles here */
     .debug-bar {

@@ -6,10 +6,29 @@ class Database {
     private $pdo;
 
     private function __construct() {
-        $dbPath = __DIR__ . '/../../storage/database.sqlite';
-        $this->pdo = new \PDO("sqlite:$dbPath");
-        $this->pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-        $this->initializeTables();
+        try {
+            $dbPath = __DIR__ . '/../../storage/database.sqlite';
+            
+            // Create the directory if it doesn't exist
+            $dirPath = dirname($dbPath);
+            if (!file_exists($dirPath)) {
+                mkdir($dirPath, 0755, true);
+            }
+            
+            // Ensure we can write to the database file
+            if (!file_exists($dbPath)) {
+                touch($dbPath);
+                chmod($dbPath, 0664);
+            }
+            
+            $this->pdo = new \PDO("sqlite:$dbPath");
+            $this->pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+            $this->initializeTables();
+            
+        } catch (\Exception $e) {
+            error_log("Database connection error: " . $e->getMessage());
+            throw new \Exception("Could not connect to database: " . $e->getMessage());
+        }
     }
 
     public static function getInstance() {

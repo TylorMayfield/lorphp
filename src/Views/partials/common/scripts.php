@@ -1,3 +1,4 @@
 <?php
-// Common scripts partial (empty for now, add JS files here if needed)
+// Common scripts partial
 ?>
+<script src="/js/transitions.js"></script>
