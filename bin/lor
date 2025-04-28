@@ -1,0 +1,126 @@
+#!/usr/bin/env php
+<?php
+
+if (php_sapi_name() !== 'cli') {
+    die('This script can only be run from the command line');
+}
+
+// Show detailed errors
+error_reporting(E_ALL);
+ini_set('display_errors', '1');
+
+function showHelp() {
+    echo "\nLorPHP Command Line Tool\n";
+    echo "========================\n\n";
+    echo "Available commands:\n";
+    echo "  migrate:create <name>  Create a new migration\n";
+    echo "  migrate:run           Run pending migrations\n";
+    echo "  migrate:rollback      Rollback last migration batch\n";
+    echo "  help                  Show this help message\n\n";
+    echo "Examples:\n";
+    echo "  ./lor migrate:create add_users_table\n";
+    echo "  ./lor migrate:run\n";
+    echo "  ./lor migrate:rollback\n\n";
+}
+
+// Get the command from arguments
+if ($argc < 2) {
+    showHelp();
+    exit(0);
+}
+
+$input = $argv[1];
+
+// Parse command
+if ($input === 'help') {
+    showHelp();
+    exit(0);
+}
+
+$parts = explode(':', $input);
+if (count($parts) !== 2 || $parts[0] !== 'migrate') {
+    echo "Error: Unknown command '{$input}'\n\n";
+    showHelp();
+    exit(1);
+}
+
+$command = $parts[1];
+$name = isset($argv[2]) ? $argv[2] : null;
+
+// Process commands
+switch ($command) {
+    case 'help':
+        showHelp();
+        break;
+
+    case 'create':
+        if (!$name) {
+            echo "Error: Migration name is required\n";
+            echo "Usage: ./lor migrate:create <name>\n";
+            exit(1);
+        }
+        createMigration($name);
+        break;
+
+    case 'run':
+        runMigrations();
+        break;
+
+    case 'rollback':
+        rollbackMigrations();
+        break;
+
+    default:
+        echo "Error: Unknown migrate command '{$command}'\n\n";
+        showHelp();
+        exit(1);
+}
+
+function createMigration($name) {
+    $timestamp = date('Y_m_d_His');
+    $filename = "{$timestamp}_{$name}.php";
+    $path = __DIR__ . '/../database/migrations/' . $filename;
+    
+    if (!is_dir(dirname($path))) {
+        mkdir(dirname($path), 0755, true);
+    }
+    
+    $className = str_replace([' ', '_'], '', ucwords($name, ' _'));
+    
+    $template = <<<PHP
+<?php
+namespace LorPHP\Database\Migrations;
+
+use LorPHP\Core\Migration;
+use LorPHP\Core\Schema;
+
+class {$className} extends Migration {
+    public function up() {
+        \$this->createTable('table_name', function(Schema \$table) {
+            \$table->id();
+            \$table->string('name');
+            \$table->timestamp('created_at', 'CURRENT_TIMESTAMP');
+        });
+    }
+    
+    public function down() {
+        \$this->dropTable('table_name');
+    }
+}
+PHP;
+
+    file_put_contents($path, $template);
+    echo "Created migration: {$filename}\n";
+}
+
+function runMigrations() {
+    echo "Running migrations...\n";
+    // Implementation will be added once we verify basic command structure works
+    echo "Migration functionality coming soon\n";
+}
+
+function rollbackMigrations() {
+    echo "Rolling back migrations...\n";
+    // Implementation will be added once we verify basic command structure works
+    echo "Rollback functionality coming soon\n";
+}

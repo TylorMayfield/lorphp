@@ -10,10 +10,13 @@ class User extends Model {
     
     // User properties
     public $id;
+    public $organization_id;
     public $name;
     public $email;
     public $password;
     public $created_at;
+    
+    private $organization = null;
     
     protected $schema = [
         'name' => [
@@ -94,7 +97,7 @@ class User extends Model {
             'name' => $this->name,
             'email' => $this->email,
             'iat' => time(),
-            'exp' => time() + (60 * 60 * 24) // 24 hours
+            'exp' => time() + (60 * 60 * 72) // 72 hours
         ];
 
         $secret = $_ENV['JWT_SECRET'] ?? 'your-256-bit-secret';
@@ -189,7 +192,6 @@ class User extends Model {
                 $this->id = $user['id'];
                 $this->name = $user['name'];
                 $this->email = $user['email'];
-                $this->password = $user['password'];
                 $this->created_at = $user['created_at'];
                 
                 // Generate and return JWT token
@@ -203,5 +205,51 @@ class User extends Model {
         }
     }
 
-
+    /**
+     * Find a user by their ID
+     * @param int $id
+     * @return User|null
+     */
+    public static function findById($id) {
+        $db = Database::getInstance();
+        $userData = $db->findOne('users', ['id' => $id]);
+        
+        if (!$userData) {
+            return null;
+        }
+        
+        $user = new self();
+        foreach ($userData as $key => $value) {
+            $user->$key = $value;
+        }
+        
+        // Load the organization relationship
+        if ($user->organization_id) {
+            $user->loadOrganization();
+        }
+        
+        return $user;
+    }
+    
+    /**
+     * Load the organization relationship
+     */
+    private function loadOrganization() {
+        if ($this->organization === null && $this->organization_id) {
+            $this->organization = Organization::findById($this->organization_id);
+        }
+        return $this->organization;
+    }
+    
+    /**
+     * Get the user's organization clients
+     * @param array $conditions Optional conditions to filter clients
+     * @return array
+     */
+    public function getOrganizationClients($conditions = []) {
+        if (!$this->organization) {
+            $this->loadOrganization();
+        }
+        return $this->organization ? $this->organization->getClients($conditions) : [];
+    }
 }

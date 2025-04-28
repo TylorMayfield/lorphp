@@ -75,6 +75,13 @@ class Application {
         $router->get('/dashboard', 'DashboardController@index');
         $router->post('/logout', 'AuthController@logout');
         
+        // CRM Routes
+        $router->get('/clients', 'ClientController@index');
+        $router->get('/clients/create', 'ClientController@create');
+        $router->post('/clients', 'ClientController@create');
+        $router->get('/clients/{id}', 'ClientController@view');
+        $router->post('/clients/{id}/contacts', 'ClientController@addContact');
+        
         // Dispatch the request
         try {
             $response = $router->dispatch();
