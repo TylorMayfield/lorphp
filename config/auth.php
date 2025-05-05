@@ -52,10 +52,17 @@ return [
         ]
     ],
 
+    // JWT Configuration
+    'jwt' => [
+        'secret' => $_ENV['JWT_SECRET'] ?? 'your-256-bit-secret',
+        'expiration' => 72, // hours
+        'algorithm' => 'HS256'
+    ],
+    
+    // Messages
     'messages' => [
         'login' => [
-            'invalid_credentials' => 'Invalid credentials',
-            'fields_required' => 'Please fill in all fields',
+            'invalid_credentials' => 'Invalid email or password'
         ],
         'register' => [
             'registration_failed' => 'Registration failed. Please try again.',

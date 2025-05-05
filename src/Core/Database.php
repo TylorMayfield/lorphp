@@ -137,10 +137,17 @@ class Database {
     public function getAll($table, $conditions = [], $orderBy = null) {
         $where = [];
         $params = [];
+        $limit = '';
+        
         foreach ($conditions as $field => $value) {
+            if ($field === 'limit') {
+                $limit = " LIMIT " . (int)$value;
+                continue;
+            }
             $where[] = "$field = ?";
             $params[] = $value;
         }
+        
         $whereClause = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
         
         if ($orderBy) {
@@ -149,7 +156,7 @@ class Database {
             $orderByClause = '';
         }
         
-        $sql = "SELECT * FROM {$table} {$whereClause} {$orderByClause}";
+        $sql = "SELECT * FROM {$table} {$whereClause} {$orderByClause}{$limit}";
         return $this->query($sql, $params)->fetchAll(\PDO::FETCH_ASSOC);
     }
     public function get($table, $id) {
@@ -236,20 +243,73 @@ class Database {
 
     public function query($sql, $params = []) {
         $stmt = $this->pdo->prepare($sql);
+        $params = is_array($params[0] ?? null) ? $params[0] : $params;
         $stmt->execute($params);
         return $stmt;
     }
 
+    /**
+     * Convert value to appropriate SQLite type
+     */
+    private function convertValueForSQLite($value, $type = null) {
+        if ($value === null) {
+            return null;
+        }
+        
+        // If type is explicitly provided, use it
+        if ($type !== null) {
+            switch ($type) {
+                case 'INTEGER':
+                case 'int':
+                    return (int)$value;
+                case 'TEXT':
+                case 'string':
+                    return (string)$value;
+                case 'REAL':
+                case 'float':
+                    return (float)$value;
+                default:
+                    return $value;
+            }
+        }
+        
+        // Otherwise infer type
+        if (is_int($value)) {
+            return (int)$value;
+        } elseif (is_float($value)) {
+            return (float)$value;
+        } else {
+            return (string)$value;
+        }
+    }
+
     public function insert($table, $data) {
+        // Get table info to determine column types
+        $tableInfo = $this->pdo->query("PRAGMA table_info(" . $table . ")")->fetchAll(\PDO::FETCH_ASSOC);
+        $columnTypes = [];
+        foreach ($tableInfo as $column) {
+            $columnTypes[$column['name']] = $column['type'];
+        }
+        
         $fields = implode(', ', array_keys($data));
         $placeholders = implode(', ', array_fill(0, count($data), '?'));
         $sql = "INSERT INTO {$table} ({$fields}) VALUES ({$placeholders})";
         
+        // Convert values based on column types
+        $values = [];
+        foreach ($data as $field => $value) {
+            $type = $columnTypes[$field] ?? null;
+            $values[] = $this->convertValueForSQLite($value, $type);
+        }
+        
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute(array_values($data));
+        $stmt->execute($values);
         return $this->pdo->lastInsertId();
     }
 
+    /**
+     * Find a single record by conditions
+     */
     public function findOne($table, $conditions) {
         $where = [];
         $params = [];
@@ -260,24 +320,31 @@ class Database {
         $whereClause = implode(' AND ', $where);
         
         $sql = "SELECT * FROM {$table} WHERE {$whereClause} LIMIT 1";
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute($params);
-        
+        error_log("[DB Debug] Running query: " . $sql . " with params: " . json_encode($params));
+        $stmt = $this->query($sql, $params);
         return $stmt->fetch(\PDO::FETCH_ASSOC);
     }
 
     public function update($table, $data, $conditions) {
+        // Get table info to determine column types
+        $tableInfo = $this->pdo->query("PRAGMA table_info(" . $table . ")")->fetchAll(\PDO::FETCH_ASSOC);
+        $columnTypes = [];
+        foreach ($tableInfo as $column) {
+            $columnTypes[$column['name']] = $column['type'];
+        }
+        
         $set = [];
         $params = [];
         foreach ($data as $field => $value) {
             $set[] = "$field = ?";
-            $params[] = $value;
+            $type = $columnTypes[$field] ?? null;
+            $params[] = $this->convertValueForSQLite($value, $type);
         }
         
-        $where = [];
         foreach ($conditions as $field => $value) {
             $where[] = "$field = ?";
-            $params[] = $value;
+            $type = $columnTypes[$field] ?? null;
+            $params[] = $this->convertValueForSQLite($value, $type);
         }
         
         $setClause = implode(', ', $set);
@@ -300,5 +367,15 @@ class Database {
         $sql = "DELETE FROM {$table} WHERE {$whereClause}";
         $stmt = $this->pdo->prepare($sql);
         return $stmt->execute($params);
+    }
+
+    /**
+     * Execute an SQL statement and return the number of affected rows
+     * 
+     * @param string $sql The SQL statement to execute
+     * @return int The number of affected rows
+     */
+    public function exec(string $sql): int {
+        return $this->pdo->exec($sql);
     }
 }

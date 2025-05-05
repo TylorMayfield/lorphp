@@ -52,9 +52,13 @@ $this->setLayout('base');
                     
                     <div class="flow-root">
                         <ul class="-mb-8">
-                            <?php foreach ($contacts as $contact): ?>
+                            <?php 
+                            $totalContacts = count($contacts);
+                            foreach ($contacts as $index => $contact): 
+                                $isLast = ($index === $totalContacts - 1);
+                            ?>
                                 <li class="relative pb-8">
-                                    <?php if (!$loop->last): ?>
+                                    <?php if (!$isLast): ?>
                                         <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
                                     <?php endif; ?>
                                     <div class="relative flex space-x-3">

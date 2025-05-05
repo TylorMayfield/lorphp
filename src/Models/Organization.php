@@ -6,10 +6,8 @@ use LorPHP\Core\Database;
 
 class Organization extends Model {
     protected $table = 'organizations';
-    
-    public $id;
-    public $name;
-    public $created_at;
+    protected $useUuid = true;
+    protected $timestamps = true;
     
     protected $schema = [
         'name' => [
@@ -22,31 +20,6 @@ class Organization extends Model {
         ]
     ];
     
-    public function save(): bool {
-        try {
-            $db = Database::getInstance();
-            
-            $data = [
-                'name' => $this->name
-            ];
-            
-            if (!isset($this->id)) {
-                $this->id = $db->insert($this->table, $data);
-                return $this->id > 0;
-            }
-            
-            return $db->update($this->table, $data, ['id' => $this->id]);
-        } catch (\Exception $e) {
-            error_log("Error saving organization: " . $e->getMessage());
-            return false;
-        }
-    }
-    
-    /**
-     * Find an organization by ID
-     * @param int $id
-     * @return Organization|null
-     */
     public static function findById($id) {
         $db = Database::getInstance();
         $orgData = $db->findOne('organizations', ['id' => $id]);
@@ -63,15 +36,47 @@ class Organization extends Model {
         return $org;
     }
     
-    /**
-     * Get organization's clients with optional conditions
-     * @param array $conditions
-     * @return array
-     */
     public function getClients($conditions = []) {
-        $db = Database::getInstance();
-        $allConditions = array_merge(['organization_id' => $this->id], $conditions);
-        return $db->getAll('clients', $allConditions);
+        try {
+            $db = Database::getInstance();
+            $params = [$this->id];  // Start with organization_id parameter
+            $sql = "SELECT * FROM clients WHERE organization_id = ?";
+
+            if (!empty($conditions['search'])) {
+                $sql .= " AND (name LIKE ? OR email LIKE ? OR phone LIKE ?)";
+                $searchTerm = "%" . $conditions['search'] . "%";
+                $params[] = $searchTerm;
+                $params[] = $searchTerm;
+                $params[] = $searchTerm;
+            }
+
+            if (!empty($conditions['status'])) {
+                $sql .= " AND status = ?";
+                $params[] = $conditions['status'];
+            }
+
+            if (!empty($conditions['limit'])) {
+                $sql .= " LIMIT " . (int)$conditions['limit'];
+            }
+
+            error_log("[Organization Debug] Running query: " . $sql . " with params: " . print_r($params, true));
+            $stmt = $db->query($sql, $params);
+            
+            $clients = [];
+            while ($row = $stmt->fetch(\PDO::FETCH_ASSOC)) {
+                $client = new Client();
+                foreach ($row as $key => $value) {
+                    $client->__set($key, $value);  // Use __set to ensure proper attribute setting
+                }
+                $clients[] = $client;
+            }
+            error_log("[Organization Debug] Found " . count($clients) . " clients");
+            return $clients;
+        } catch (\Exception $e) {
+            error_log("Error getting clients: " . $e->getMessage());
+            error_log("Stack trace: " . $e->getTraceAsString());
+            return [];
+        }
     }
     
     public function getUsers() {

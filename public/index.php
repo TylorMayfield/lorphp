@@ -3,6 +3,9 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
+// Log PHP errors to the project root
+ini_set('error_log', __DIR__ . '/../php-error.log');
+
 require_once __DIR__ . '/../src/Core/Bootstrap.php';
 
 use LorPHP\Core\Application;

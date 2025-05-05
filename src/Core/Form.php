@@ -14,6 +14,17 @@ class Form {
     private $cssClass = 'mt-8 space-y-6';
     private $submitText = 'Submit'; // Added property with default value
     
+    private $errorTypes = [
+        'required' => 'This field is required',
+        'email' => 'Please enter a valid email address',
+        'min' => 'This field must be at least %s characters',
+        'max' => 'This field must not exceed %s characters',
+        'match' => 'This field must match %s',
+        'unique' => 'This value is already taken',
+        'database' => 'A database error occurred',
+        'invalid' => 'Invalid value provided'
+    ];
+    
     /**
      * Create a new Form instance
      * 
@@ -170,34 +181,32 @@ class Form {
         
         return $this;
     }
-    
+
     /**
-     * Get field value
-     * 
-     * @param string $name Field name
-     * @return mixed
-     */
-    public function getValue($name) {
-        return $this->data[$name] ?? null;
-    }
-    
-    /**
-     * Set field value
-     * 
-     * @param string $name Field name
-     * @param mixed $value Field value
+     * Add an error message for a specific field or the form itself.
+     *
+     * @param string $field The field name or 'form' for a general error.
+     * @param string $message The error message.
      * @return Form
      */
-    public function setValue($name, $value) {
-        $this->data[$name] = $value;
-        if (isset($this->fields[$name])) {
-            $this->fields[$name]['value'] = $value;
-        }
+    public function addError($field, $message) {
+        $this->errors[$field] = $message;
         return $this;
     }
-    
+
     /**
-     * Get all form data
+     * Get the value for a specific field.
+     *
+     * @param string $name The name of the field.
+     * @param mixed $default The default value to return if the field is not set.
+     * @return mixed The value of the field or the default value.
+     */
+    public function getValue($name, $default = null) {
+        return $this->data[$name] ?? $default;
+    }
+
+    /**
+     * Get form data
      * 
      * @return array
      */
@@ -512,21 +521,65 @@ class Form {
     }
 
     /**
-     * Render form validation errors
+     * Add an error with specific type and details
      * 
-     * @return string
+     * @param string $field Field name
+     * @param string $type Error type (required, email, min, max, match, unique, database)
+     * @param array $context Additional context for the error
+     * @return Form
+     */
+    public function addTypedError($field, $type, $context = []) {
+        $message = $this->errorTypes[$type] ?? 'An error occurred';
+        if (!empty($context)) {
+            $message = vsprintf($message, $context);
+        }
+        $this->errors[$field] = [
+            'type' => $type,
+            'message' => $message,
+            'context' => $context
+        ];
+        return $this;
+    }
+    
+    /**
+     * Render form errors in a consistent way
+     * 
+     * @return string HTML for form errors
      */
     public function renderErrors() {
         if (empty($this->errors)) {
             return '';
         }
         
-        $html = '<div class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">';
-        foreach ($this->errors as $field => $error) {
-            $html .= '<p class="block sm:inline mb-1">' . htmlspecialchars($error) . '</p>';
-        }
-        $html .= '</div>';
+        $output = '';
         
-        return $html;
+        // First, render any form-level errors
+        if (isset($this->errors['form'])) {
+            $error = $this->errors['form'];
+            $output .= $this->view->renderPartial('partials/components/error-alert', [
+                'message' => is_array($error) ? $error['message'] : $error,
+                'type' => 'error'
+            ]);
+        }
+        
+        // Then, render field-specific errors
+        $fieldErrors = array_filter($this->errors, function($key) {
+            return $key !== 'form';
+        }, ARRAY_FILTER_USE_KEY);
+        
+        if (!empty($fieldErrors)) {
+            $details = array_map(function($error, $field) {
+                $message = is_array($error) ? $error['message'] : $error;
+                return "$message";
+            }, $fieldErrors, array_keys($fieldErrors));
+            
+            $output .= $this->view->renderPartial('partials/components/error-alert', [
+                'message' => 'Please correct the following errors:',
+                'type' => 'error',
+                'details' => $details
+            ]);
+        }
+        
+        return $output;
     }
 }

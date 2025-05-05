@@ -1,7 +1,11 @@
 <?php
 namespace LorPHP\Core;
 
+use LorPHP\Core\Traits\ViewComponent;
+
 class View {
+    use ViewComponent;
+
     private $layout = 'base';
     private $content = '';
     private $data = [];

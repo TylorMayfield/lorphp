@@ -1,1 +1,4 @@
 /node_modules
+storage/database.sqlite
+storage/database.sqlite
+php-error.log

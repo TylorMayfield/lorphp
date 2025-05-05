@@ -7,8 +7,8 @@ use LorPHP\Core\Schema;
 class CreateUsersTable extends Migration {
     public function up() {
         $this->createTable('users', function(Schema $table) {
-            $table->id();
-            $table->integer('organization_id', true);
+            $table->uuid();
+            $table->string('organization_id');
             $table->string('name');
             $table->string('email');
             $table->string('password');

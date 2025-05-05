@@ -2,6 +2,7 @@
 namespace LorPHP\Controllers;
 
 use LorPHP\Core\Controller;
+use LorPHP\Core\Database;
 use LorPHP\Models\User;
 
 /**
@@ -39,7 +40,7 @@ class RegisterController extends Controller
         
         // Initialize form with validation rules from config
         $form = \LorPHP\Core\FormBuilder::createRegistrationForm();
-        $form->setSubmitText('Create Account'); // Using proper method instead of direct property assignment
+        $form->setSubmitText('Create Account');
         
         // Handle form submission
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -49,8 +50,16 @@ class RegisterController extends Controller
                 $data = $form->getData();
                 
                 try {
-                    // Attempt to create and save the user
+                    // Create organization first
+                    $organization = new \LorPHP\Models\Organization();
+                    $organization->name = $data['name'] . "'s Organization";
+                    if (!$organization->save()) {
+                        throw new \Exception("Failed to create organization");
+                    }
+                    
+                    // Create user and link to organization
                     $user = new User();
+                    $user->organization_id = $organization->id;
                     $user->name = $data['name'];
                     $user->email = $data['email'];
                     $user->setPassword($data['password']);
@@ -64,21 +73,29 @@ class RegisterController extends Controller
                     $form->addError('form', 'Registration failed. Please try again.');
                     
                 } catch (\PDOException $e) {
-                    // Handle database-specific errors (like duplicate email)
+                    // Handle database-specific errors with more detail
                     if (strpos($e->getMessage(), 'UNIQUE constraint failed') !== false) {
-                        $form->addError('email', 'This email address is already registered');
+                        $form->addTypedError('email', 'unique');
+                        $form->addTypedError('form', 'database', [
+                            'It looks like you already have an account. Please try logging in instead.'
+                        ]);
                     } else {
-                        $form->addError('form', 'A database error occurred. Please try again.');
+                        $form->addTypedError('form', 'database');
                     }
                     $this->debugLog("Database error during registration: " . $e->getMessage());
                     
                 } catch (\Exception $e) {
-                    $form->addError('form', 'An unexpected error occurred. Please try again.');
+                    $form->addTypedError('form', 'invalid', [
+                        'An unexpected error occurred. Our team has been notified.'
+                    ]);
                     $this->debugLog("Unexpected error during registration: " . $e->getMessage());
                 }
+            } else {
+                $this->debugLog("Form validation failed");
             }
         }
         
+        render:
         // Render the registration page
         return $this->view('register', [
             'title' => 'Create your account - ' . ($config['app_name'] ?? 'LorPHP'),

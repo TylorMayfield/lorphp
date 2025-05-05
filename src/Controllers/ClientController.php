@@ -30,7 +30,7 @@ class ClientController extends Controller {
     public function create() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $client = new Client();
-            $client->organization_id = $this->user->organization_id;
+            $client->organization_id = $this->user->organization_id; // UUID
             $client->name = $_POST['name'] ?? '';
             $client->email = $_POST['email'] ?? '';
             $client->phone = $_POST['phone'] ?? '';
@@ -49,19 +49,6 @@ class ClientController extends Controller {
         
         return $this->view('clients/create', [
             'title' => 'New Client'
-        ]);
-    }
-
-    public function view($id) {
-        $client = $this->getClientById($id);
-        if (!$client) {
-            return $this->redirectTo('/clients');
-        }
-        
-        return $this->view('clients/view', [
-            'title' => $client->name,
-            'client' => $client,
-            'contacts' => $client->getContacts()
         ]);
     }
 
@@ -87,23 +74,23 @@ class ClientController extends Controller {
         return $this->redirectTo("/clients/{$id}");
     }
 
-    private function getClientById($id) {
-        $client = new Client();
-        $db = \LorPHP\Core\Database::getInstance();
-        $stmt = $db->query(
-            "SELECT * FROM clients WHERE id = ? AND organization_id = ?",
-            [$id, $this->user->organization_id]
-        );
-        
-        $data = $stmt->fetch(\PDO::FETCH_ASSOC);
-        if (!$data) {
-            return null;
+    public function show($id) {
+        $client = Client::findOne([
+            'id' => $id,
+            'organization_id' => $this->user->organization_id
+        ]);
+
+        if (!$client) {
+            $this->withError('Client not found');
+            return $this->redirectTo('/clients');
         }
+
+        $contacts = $client->getContacts();
         
-        foreach ($data as $key => $value) {
-            $client->$key = $value;
-        }
-        
-        return $client;
+        return $this->view('clients/view', [
+            'title' => $client->name . ' - Client Details',
+            'client' => $client,
+            'contacts' => $contacts
+        ]);
     }
 }

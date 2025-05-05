@@ -37,7 +37,7 @@ $this->setLayout('base');
                 </div>
 
                 <div class="flex justify-end space-x-3">
-                    <a href="/clients" class="bg-gray-100 text-gray-800 px-4 py-2 rounded-md text-sm hover:bg-gray-200">
+                    <a href="/dashboard" class="bg-gray-100 text-gray-800 px-4 py-2 rounded-md text-sm hover:bg-gray-200">
                         Cancel
                     </a>
                     <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700">

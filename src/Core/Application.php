@@ -79,7 +79,7 @@ class Application {
         $router->get('/clients', 'ClientController@index');
         $router->get('/clients/create', 'ClientController@create');
         $router->post('/clients', 'ClientController@create');
-        $router->get('/clients/{id}', 'ClientController@view');
+        $router->get('/clients/{id}', 'ClientController@show');
         $router->post('/clients/{id}/contacts', 'ClientController@addContact');
         
         // Dispatch the request

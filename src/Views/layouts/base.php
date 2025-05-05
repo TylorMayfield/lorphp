@@ -36,6 +36,12 @@
         echo "<!-- Debug: Scripts render error: " . htmlspecialchars($e->getMessage()) . " -->\n";
     }
     ?>
+    
+    <!-- Toast Notifications -->
+    <?php echo $this->ui()->toast([
+        'flash_error' => $flash_error ?? null,
+        'flash_success' => $flash_success ?? null
+    ]); ?>
 </head>
 <body class="bg-gray-100">
     <!-- Navigation -->
@@ -59,6 +65,7 @@
         }
         ?>
     </main>
+    <?php include __DIR__ . '/../partials/components/toast.php'; ?>
     
     <!-- Footer -->
     <footer class="bg-white mt-20 py-8">

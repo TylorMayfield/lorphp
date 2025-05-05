@@ -23,13 +23,17 @@ $this->setLayout('base');
 
         <?php if (isset($form)): ?>
             <?php
-            // First render any form-level errors
+            // Display any form errors using our new error component
             echo $form->renderErrors();
-            // Then render the complete form
+            
+            // Render the complete form
             echo $form->render();
             ?>
         <?php else: ?>
-            <div class="text-red-600">Error: Registration form not available</div>
+            <?php echo $this->renderPartial('partials/components/error-alert', [
+                'message' => 'Error: Registration form not available',
+                'type' => 'error'
+            ]); ?>
         <?php endif; ?>
     </div>
 </div>

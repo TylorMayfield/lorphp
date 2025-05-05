@@ -13,29 +13,39 @@ $this->setLayout('base');
             $recentContacts = count($user->getOrganizationClients(['last_contact_date' => date('Y-m-d', strtotime('-7 days'))]));
             ?>
             
-            <?php $this->partial('components/stats-card', [
-                'label' => 'Total Clients',
-                'value' => $totalClients,
-                'bgColor' => 'bg-indigo-500'
-            ]); ?>
+            <?php echo $this->ui()->statsCard()
+                ->label('Total Clients')
+                ->value($totalClients)
+                ->color('bg-indigo-500')
+                ->icon('<svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>'); ?>
 
-            <?php $this->partial('components/stats-card', [
-                'label' => 'Active Clients',
-                'value' => $activeClients,
-                'bgColor' => 'bg-green-500'
-            ]); ?>
+            <?php echo $this->ui()->statsCard()
+                ->label('Active Clients')
+                ->value($activeClients)
+                ->color('bg-green-500')
+                ->icon('<svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>'); ?>
 
-            <?php $this->partial('components/stats-card', [
-                'label' => 'Recent Contacts',
-                'value' => $recentContacts,
-                'bgColor' => 'bg-blue-500'
-            ]); ?>
+            <?php echo $this->ui()->statsCard()
+                ->label('Recent Contacts')
+                ->value($recentContacts)
+                ->color('bg-blue-500')
+                ->icon('<svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>'); ?>
 
-            <?php $this->partial('components/stats-card', [
-                'label' => 'Organization Users',
-                'value' => count($user->getOrganization()->getUsers()),
-                'bgColor' => 'bg-purple-500'
-            ]); ?>
+            <?php 
+            $organization = $user->getOrganization();
+            echo $this->ui()->statsCard()
+                ->label('Organization Users')
+                ->value($organization ? count($organization->getUsers()) : 0)
+                ->color('bg-purple-500')
+                ->icon('<svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>'); ?>
         </div>        <!-- Main Content -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <!-- Recent Clients -->
@@ -108,12 +118,14 @@ $this->setLayout('base');
                             
                             foreach ($recentContacts as $contact):
                             ?>
-                                <?php $this->partial('components/activity-item', [
+                                <?php echo $this->ui()->activityItem([
                                     'title' => $contact['user_name'],
                                     'description' => "Contacted {$contact['client_name']} - {$contact['type']}",
                                     'time' => date('M j, Y', strtotime($contact['contact_date'])),
                                     'link' => "/clients/{$contact['client_id']}"
-                                ]); ?>
+                                ])->withSlot('icon', '<svg class="h-5 w-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                                </svg>'); ?>
                             <?php endforeach; ?>
                         </ul>
                     </div>

@@ -1,0 +1,17 @@
+{
+  "validUser": {
+    "name": "Test User",
+    "email": "test@example.com",
+    "password": "password123"
+  },
+  "orgOneUser": {
+    "name": "Org One User",
+    "email": "org1@example.com",
+    "password": "password123"
+  },
+  "orgTwoUser": {
+    "name": "Org Two User",
+    "email": "org2@example.com",
+    "password": "password123"
+  }
+}

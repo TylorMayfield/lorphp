@@ -5,6 +5,37 @@ if (php_sapi_name() !== 'cli') {
     die('This script can only be run from the command line');
 }
 
+// Register autoloader
+spl_autoload_register(function ($class) {
+    // Convert namespace to full file path
+    if (strpos($class, 'LorPHP\\Database\\Migrations\\') === 0) {
+        $base_dir = __DIR__ . '/../database/migrations/';
+        $parts = explode('\\', $class);
+        $migrationFile = $base_dir . $parts[count($parts)-1] . '.php';
+        
+        // Try direct match first
+        if (file_exists($migrationFile)) {
+            require_once $migrationFile;
+            return;
+        }
+        
+        // If not found, try to match the class name to numbered migration files
+        $files = glob($base_dir . '*.php');
+        if (!empty($files)) {
+            require_once $files[0];
+            return;
+        }
+    } else {
+        $base_dir = __DIR__ . '/../src/';
+        $file = str_replace('\\', '/', $class) . '.php';
+        $file = $base_dir . str_replace('LorPHP/', '', $file);
+        
+        if (file_exists($file)) {
+            require $file;
+        }
+    }
+});
+
 // Show detailed errors
 error_reporting(E_ALL);
 ini_set('display_errors', '1');
@@ -13,7 +44,7 @@ function showHelp() {
     echo "\nLorPHP Command Line Tool\n";
     echo "========================\n\n";
     echo "Available commands:\n";
-    echo "  migrate:create <name>  Create a new migration\n";
+    echo "  migrate:create <n>  Create a new migration\n";
     echo "  migrate:run           Run pending migrations\n";
     echo "  migrate:rollback      Rollback last migration batch\n";
     echo "  help                  Show this help message\n\n";
@@ -21,6 +52,82 @@ function showHelp() {
     echo "  ./lor migrate:create add_users_table\n";
     echo "  ./lor migrate:run\n";
     echo "  ./lor migrate:rollback\n\n";
+}
+
+function getMigrationFiles() {
+    $files = glob(__DIR__ . '/../database/migrations/*.php');
+    sort($files); // Ensure migrations run in order
+    return $files;
+}
+
+function getPendingMigrations() {
+    $db = \LorPHP\Core\Database::getInstance();
+    $executed = $db->query("SELECT migration FROM migrations")->fetchAll(\PDO::FETCH_COLUMN);
+    $pending = [];
+    
+    foreach (getMigrationFiles() as $file) {
+        $name = basename($file);
+        if (!in_array($name, $executed)) {
+            $pending[] = $file;
+        }
+    }
+    
+    return $pending;
+}
+
+function runMigration($file) {
+    require_once $file;
+    // Convert snake_case filename to CamelCase classname (e.g., 001_create_users_table -> CreateUsersTable)
+    $name = preg_replace('/^\d+_/', '', pathinfo($file, PATHINFO_FILENAME));
+    $className = '\\LorPHP\\Database\\Migrations\\' . str_replace(' ', '', ucwords(str_replace('_', ' ', $name)));
+    
+    if (!class_exists($className)) {
+        echo "Error: Class {$className} not found in file {$file}\n";
+        return false;
+    }
+    
+    $migration = new $className();
+    
+    try {
+        $batch = $migration->getLastBatch() + 1;
+        $migration->up();
+        $migration->log(basename($file), $batch);
+        echo "Migrated: " . basename($file) . "\n";
+        return true;
+    } catch (\Exception $e) {
+        echo "Error migrating " . basename($file) . ": " . $e->getMessage() . "\n";
+        // Attempt to rollback if up() failed
+        try {
+            $migration->down();
+            echo "Rolled back failed migration: " . basename($file) . "\n";
+        } catch (\Exception $downEx) {
+            echo "Error rolling back failed migration " . basename($file) . ": " . $downEx->getMessage() . "\n";
+        }
+        return false;
+    }
+}
+
+function rollbackMigration($file) {
+    require_once $file;
+    $name = preg_replace('/^\d+_/', '', pathinfo($file, PATHINFO_FILENAME));
+    $className = '\\LorPHP\\Database\\Migrations\\' . str_replace(' ', '', ucwords(str_replace('_', ' ', $name)));
+
+    if (!class_exists($className)) {
+        echo "Error: Class {$className} not found in file {$file}\n";
+        return false;
+    }
+
+    $migration = new $className();
+    
+    try {
+        $migration->down();
+        $migration->remove(basename($file));
+        echo "Rolled back: " . basename($file) . "\n";
+        return true;
+    } catch (\Exception $e) {
+        echo "Error rolling back " . basename($file) . ": " . $e->getMessage() . "\n";
+        return false;
+    }
 }
 
 // Get the command from arguments
@@ -49,78 +156,78 @@ $name = isset($argv[2]) ? $argv[2] : null;
 
 // Process commands
 switch ($command) {
-    case 'help':
-        showHelp();
+    case 'run':
+        echo "Running migrations...\n";
+        $pending = getPendingMigrations();
+        if (empty($pending)) {
+            echo "Nothing to migrate.\n";
+            exit(0);
+        }
+        
+        foreach ($pending as $file) {
+            runMigration($file);
+        }
         break;
-
+        
+    case 'rollback':
+        echo "Rolling back last batch...\n";
+        $db = \LorPHP\Core\Database::getInstance();
+        $lastBatch = $db->query("SELECT MAX(batch) as batch FROM migrations")->fetch(\PDO::FETCH_ASSOC)['batch'];
+        
+        if (!$lastBatch) {
+            echo "Nothing to rollback.\n";
+            exit(0);
+        }
+        
+        $migrations = $db->query(
+            "SELECT migration FROM migrations WHERE batch = ? ORDER BY id DESC",
+            [$lastBatch]
+        )->fetchAll(\PDO::FETCH_COLUMN);
+        
+        foreach ($migrations as $migration) {
+            $file = __DIR__ . '/../database/migrations/' . $migration;
+            if (file_exists($file)) {
+                rollbackMigration($file);
+            }
+        }
+        break;
+        
     case 'create':
         if (!$name) {
-            echo "Error: Migration name is required\n";
+            echo "Error: Migration name required\n";
             echo "Usage: ./lor migrate:create <name>\n";
             exit(1);
         }
-        createMigration($name);
-        break;
-
-    case 'run':
-        runMigrations();
-        break;
-
-    case 'rollback':
-        rollbackMigrations();
-        break;
-
-    default:
-        echo "Error: Unknown migrate command '{$command}'\n\n";
-        showHelp();
-        exit(1);
-}
-
-function createMigration($name) {
-    $timestamp = date('Y_m_d_His');
-    $filename = "{$timestamp}_{$name}.php";
-    $path = __DIR__ . '/../database/migrations/' . $filename;
-    
-    if (!is_dir(dirname($path))) {
-        mkdir(dirname($path), 0755, true);
-    }
-    
-    $className = str_replace([' ', '_'], '', ucwords($name, ' _'));
-    
-    $template = <<<PHP
+        
+        $template = <<<PHP
 <?php
 namespace LorPHP\Database\Migrations;
 
 use LorPHP\Core\Migration;
 use LorPHP\Core\Schema;
 
-class {$className} extends Migration {
+class %s extends Migration {
     public function up() {
-        \$this->createTable('table_name', function(Schema \$table) {
-            \$table->id();
-            \$table->string('name');
-            \$table->timestamp('created_at', 'CURRENT_TIMESTAMP');
-        });
+        // Your migration code here
     }
     
     public function down() {
-        \$this->dropTable('table_name');
+        // Rollback code here
     }
 }
 PHP;
 
-    file_put_contents($path, $template);
-    echo "Created migration: {$filename}\n";
-}
-
-function runMigrations() {
-    echo "Running migrations...\n";
-    // Implementation will be added once we verify basic command structure works
-    echo "Migration functionality coming soon\n";
-}
-
-function rollbackMigrations() {
-    echo "Rolling back migrations...\n";
-    // Implementation will be added once we verify basic command structure works
-    echo "Rollback functionality coming soon\n";
+        $className = str_replace(' ', '_', ucwords(str_replace('_', ' ', $name)));
+        $migrations = glob(__DIR__ . '/../database/migrations/*.php');
+        $nextNum = sprintf('%03d', count($migrations) + 1);
+        $filename = __DIR__ . "/../database/migrations/{$nextNum}_{$name}.php";
+        
+        file_put_contents($filename, sprintf($template, $className));
+        echo "Created migration: " . basename($filename) . "\n";
+        break;
+        
+    default:
+        echo "Error: Unknown command '{$command}'\n";
+        showHelp();
+        exit(1);
 }

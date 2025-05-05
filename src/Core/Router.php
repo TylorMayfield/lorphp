@@ -27,17 +27,18 @@ class Router {
             error_log("Router: Method=$method, URI=$uri");
             
             foreach ($this->routes as $route) {
-                if ($route['method'] === $method && $this->matchPath($route['path'], $uri)) {
-                    // Handle POST data
-                    if ($method === 'POST' && empty($_POST) && !empty($_SERVER['CONTENT_LENGTH'])) {
-                        error_log("Router: POST data missing but content length exists. Raw input: " . file_get_contents('php://input'));
-                    }
-                    
-                    // Clear any output so far
-                    ob_clean();
-                    
-                    // Handle the route
-                    $result = $this->handle($route['handler']);
+                    $params = [];
+                    if ($route['method'] === $method && $this->matchPath($route['path'], $uri, $params)) {
+                        // Handle POST data
+                        if ($method === 'POST' && empty($_POST) && !empty($_SERVER['CONTENT_LENGTH'])) {
+                            error_log("Router: POST data missing but content length exists. Raw input: " . file_get_contents('php://input'));
+                        }
+                        
+                        // Clear any output so far
+                        ob_clean();
+                        
+                        // Handle the route with parameters
+                        $result = $this->handle($route['handler'], $params);
                     
                     // Get any buffered content
                     $output = ob_get_clean();
@@ -64,28 +65,44 @@ class Router {
         }
     }
 
-    private function matchPath($pattern, $uri) {
+    private function matchPath($pattern, $uri, &$params = []) {
+        // Check for exact match first
+        if ($pattern === $uri) {
+            return true;
+        }
+        
+        // Convert route pattern to regex
         $pattern = preg_replace('/\{([a-zA-Z]+)\}/', '(?P<$1>[^/]+)', $pattern);
         $pattern = "#^" . $pattern . "$#";
-        return preg_match($pattern, $uri, $matches);
-    }    private function handle($handler) {
+        
+        // Try to match and extract parameters
+        if (preg_match($pattern, $uri, $matches)) {
+            foreach ($matches as $key => $value) {
+                if (is_string($key)) {
+                    $params[$key] = $value;
+                }
+            }
+            return true;
+        }
+        return false;
+    }    private function handle($handler, $params = []) {
         try {
             if (is_callable($handler)) {
-                return $handler();
+                return $handler($params);
             }
             
             if (is_string($handler) && strpos($handler, '@') !== false) {
                 list($controller, $method) = explode('@', $handler);
                 $controller = "LorPHP\\Controllers\\$controller";
                 
-                error_log("Router: Creating controller {$controller}");
+                error_log("Router: Creating controller {$controller} with params: " . print_r($params, true));
                 
                 if (!class_exists($controller)) {
                     throw new \Exception("Controller not found: {$controller}");
                 }
                 
                 $instance = new $controller();
-                return $instance->$method();
+                return $instance->$method(...array_values($params));
             }
             
             throw new \Exception("Invalid route handler");
