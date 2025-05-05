@@ -1,66 +1,66 @@
-/* Base transition styles for root */
+/* Root transition (page fade) */
 ::view-transition-old(root) {
-    animation: fade-out 0.4s ease-in forwards;
+    animation: fade-out 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 ::view-transition-new(root) {
-    animation: fade-in 0.4s ease-out forwards;
+    animation: fade-in 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
-/* Auth container transitions */
+/* Auth container transition */
 .auth-container {
     view-transition-name: auth;
 }
 
 ::view-transition-old(auth) {
-    animation: slide-left-out 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation: slide-left-out 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 ::view-transition-new(auth) {
-    animation: slide-right-in 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation: slide-left-in 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
-/* Dashboard content transitions */
+/* Dashboard content transition */
 .dashboard-content {
     view-transition-name: dashboard;
 }
 
 ::view-transition-old(dashboard) {
-    animation: slide-up-out 0.3s ease-in forwards;
+    animation: slide-up-out 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 ::view-transition-new(dashboard) {
-    animation: slide-up-in 0.3s ease-out forwards;
+    animation: slide-up-in 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
-/* Keyframes for fade effects */
+/* Fade animations */
 @keyframes fade-in {
-    from { opacity: 0; }
+    from { opacity: 0.01; }
     to { opacity: 1; }
 }
 
 @keyframes fade-out {
     from { opacity: 1; }
-    to { opacity: 0; }
+    to { opacity: 0.01; }
 }
 
-/* Keyframes for slide effects */
+/* Slide animations */
 @keyframes slide-left-out {
     from { transform: translateX(0); opacity: 1; }
-    to { transform: translateX(-20px); opacity: 0; }
+    to { transform: translateX(-12px); opacity: 0; }
 }
 
-@keyframes slide-right-in {
-    from { transform: translateX(20px); opacity: 0; }
+@keyframes slide-left-in {
+    from { transform: translateX(12px); opacity: 0; }
     to { transform: translateX(0); opacity: 1; }
 }
 
 @keyframes slide-up-out {
     from { transform: translateY(0); opacity: 1; }
-    to { transform: translateY(-10px); opacity: 0; }
+    to { transform: translateY(-8px); opacity: 0; }
 }
 
 @keyframes slide-up-in {
-    from { transform: translateY(10px); opacity: 0; }
+    from { transform: translateY(8px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
 }

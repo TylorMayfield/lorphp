@@ -9,12 +9,16 @@ if (!defined('DEBUG')) {
 }
 
 // Set up autoloading with enhanced debugging
-spl_autoload_register(function ($className) {
+spl_autoload_register(static function($className) {
     // Project namespace prefix
     $namespace = 'LorPHP\\';
     
     // Base directory for the namespace prefix
-    $baseDir = dirname(__DIR__) . DIRECTORY_SEPARATOR;
+    $baseDir = realpath(dirname(__DIR__)) . DIRECTORY_SEPARATOR; // This resolves to the absolute src directory
+    
+    if (DEBUG) {
+        error_log("Debug: Autoloader base directory: {$baseDir}");
+    }
     
     // Check if the class uses the namespace prefix
     $namespaceLength = strlen($namespace);
@@ -32,13 +36,24 @@ spl_autoload_register(function ($className) {
     // and append .php extension
     $filePath = $baseDir . str_replace('\\', DIRECTORY_SEPARATOR, $relativeClass) . '.php';
     
+    // Clean up the path (normalize directory separators, resolve .. and .)
+    $filePath = realpath($filePath) ?: $filePath; // Use realpath but fallback to original if file doesn't exist yet
+    
     if (DEBUG) {
         echo "<!-- Debug: Attempting to load class {$className} from {$filePath} -->\n";
+    }
+    
+    // Add more detailed debug output
+    if (DEBUG) {
+        error_log("Debug: Checking file existence: {$filePath}");
+        error_log("Debug: Current directory: " . getcwd());
+        error_log("Debug: File exists: " . (file_exists($filePath) ? 'yes' : 'no'));
     }
     
     // If the file exists, require it
     if (file_exists($filePath)) {
         if (DEBUG) {
+            error_log("Debug: Successfully loaded {$filePath}");
             echo "<!-- Debug: Successfully loaded {$filePath} -->\n";
         }
         require $filePath;
@@ -47,6 +62,14 @@ spl_autoload_register(function ($className) {
         error_log($error);
         if (DEBUG) {
             echo "<!-- Debug: {$error} -->\n";
+            // List contents of src directory for debugging
+            $srcPath = dirname($filePath);
+            if (is_dir($srcPath)) {
+                error_log("Debug: Contents of " . dirname($filePath) . ":");
+                foreach (scandir($srcPath) as $file) {
+                    error_log("  {$file}");
+                }
+            }
         }
     }
 });

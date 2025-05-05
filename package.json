@@ -3,22 +3,25 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "jest --config jest.config.js",
-    "test:watch": "jest --watch",
+    "test": "cypress run",
+    "test:open": "cypress open",
+    "test:e2e": "cypress run",
+    "test:ci": "start-server-and-test serve http://localhost:8000 test",
     "serve": "php -S localhost:8000 -t public",
-    "test:e2e": "jest --config jest.config.js",
-    "migrate": " php bin/lor migrate:run",
-    "migrate:rollback": "php bin/lor migrate:rollback"
+    "migrate": "php bin/lor migrate:run",
+    "migrate:rollback": "php bin/lor migrate:rollback",
+    "cy:verify": "cypress verify",
+    "cy:info": "cypress info",
+    "cy:run": "cypress run",
+    "cy:open": "cypress open"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "devDependencies": {
-    "@testing-library/cypress": "^10.0.3",
-    "@testing-library/jest-dom": "^6.6.3",
-    "cypress": "^14.3.2",
-    "jest-environment-jsdom": "^29.7.0",
-    "jest-transform-stub": "^2.0.0"
+    "@testing-library/cypress": "^10.0.1",
+    "cypress": "^13.6.0",
+    "start-server-and-test": "^2.0.3"
   }
 }

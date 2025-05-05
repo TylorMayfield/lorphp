@@ -7,6 +7,8 @@ use LorPHP\Components\UI\Alert;
 use LorPHP\Components\UI\Card;
 use LorPHP\Components\UI\FeatureCard;
 use LorPHP\Components\UI\Toast;
+use LorPHP\Components\UI\Table;
+use LorPHP\Components\UI\Badge;
 use LorPHP\Components\Form\Input;
 use LorPHP\Components\Layout\AuthContainer;
 use LorPHP\Components\Layout\Container;
@@ -85,5 +87,19 @@ class UI {
      */
     public static function navLink(array $attributes = []): NavLink {
         return NavLink::make($attributes);
+    }
+
+    /**
+     * Create a table component
+     */
+    public static function table(array $attributes = []): Table {
+        return Table::make($attributes);
+    }
+
+    /**
+     * Create a badge component
+     */
+    public static function badge(array $attributes = []): Badge {
+        return Badge::make($attributes);
     }
 }

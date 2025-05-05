@@ -93,4 +93,11 @@ class ClientController extends Controller {
             'contacts' => $contacts
         ]);
     }
+    
+    private function getClientById($id) {
+        return Client::findOne([
+            'id' => $id,
+            'organization_id' => $this->user->organization_id
+        ]);
+    }
 }
