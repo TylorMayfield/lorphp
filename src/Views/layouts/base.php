@@ -15,7 +15,10 @@
     <base href="/">
     
     <!-- TailwindCSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     
     <!-- Custom styles -->
     <?php $this->renderStyles(); ?>
@@ -47,10 +50,5 @@
             <p>&copy; <?php echo date('Y'); ?> LorPHP Framework. All rights reserved.</p>
         </div>
     </footer>
-    
-    <!-- Debug Bar -->
-    <?php if (isset($debug) && $debug): ?>
-        <?php $this->renderDebugBar(); ?>
-    <?php endif; ?>
 </body>
 </html>

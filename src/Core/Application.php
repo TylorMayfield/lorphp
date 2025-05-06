@@ -80,6 +80,10 @@ class Application {
         $router->get('/metrics/search', 'MetricsController@search');
         $router->get('/metrics/health', 'MetricsController@health');
         
+        // Settings Routes
+        $router->get('/settings', 'SettingsController@index');
+        $router->post('/settings/update', 'SettingsController@update');
+
         // CRM Routes
         $router->get('/clients', 'ClientController@index');
         $router->get('/clients/create', 'ClientController@create');

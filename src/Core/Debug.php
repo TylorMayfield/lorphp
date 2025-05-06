@@ -67,27 +67,4 @@ class Debug {
             'peak' => memory_get_peak_usage(true)
         ];
     }
-
-    public function renderDebugBar() {
-        if (!($this->config['app']['debug'] ?? false)) {
-            return '';
-        }
-
-        $executionTime = round($this->getExecutionTime() * 1000, 2);
-        $memoryUsage = round(memory_get_usage(true) / 1024 / 1024, 2);
-        $queryCount = count($this->queries);
-        $logCount = count($this->logs);
-
-        return <<<HTML
-        <div class="fixed bottom-0 left-0 right-0 bg-gray-800 text-white p-2 text-sm">
-            <div class="container mx-auto flex justify-between items-center">
-                <div>Execution: {$executionTime}ms</div>
-                <div>Memory: {$memoryUsage}MB</div>
-                <div>Queries: {$queryCount}</div>
-                <div>Logs: {$logCount}</div>
-                <button onclick="toggleDebugPanel()" class="bg-blue-500 px-2 py-1 rounded">Details</button>
-            </div>
-        </div>
-        HTML;
-    }
 }
