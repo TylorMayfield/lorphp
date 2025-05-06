@@ -11,34 +11,9 @@ class View {
     private $data = [];
     private $sections = [];
     private $currentSection = null;
-    private $debug = false;
-
-    public function __construct($debug = false) {
-        $this->debug = $debug;
-    }
-
     public function setLayout($layout) {
         $this->layout = $layout;
         return $this;
-    }
-
-    private function debugLog($message, $context = []) {
-        if ($this->debug) {
-            $contextStr = !empty($context) ? " Context: " . print_r($context, true) : "";
-            error_log("[View Debug] " . $message . $contextStr);
-        }
-    }
-
-    private function debugDump($message, $data = null) {
-        if (!$this->debug) return;
-        
-        $output = "[View Debug] " . $message;
-        if ($data !== null) {
-            $output .= "\n" . print_r($data, true);
-        }
-        error_log($output);
-        
-        echo "\n<!-- Debug: " . htmlspecialchars($output) . " -->\n";
     }
 
     public function render($view, $data = []) {
@@ -48,8 +23,6 @@ class View {
         try {
             // Start our own buffer
             ob_start();
-            
-            $this->debugDump("Starting render of view: {$view}");
             
             // Store view data
             $this->data = array_merge($this->data, $data);
@@ -69,13 +42,9 @@ class View {
             // Get the view content
             $this->content = ob_get_clean();
             
-            $this->debugDump("View content rendered", ['length' => strlen($this->content)]);
-            
             // If we have a layout, render it with the content
             if ($this->layout) {
                 ob_start();
-                
-                $this->debugDump("Rendering with layout: {$this->layout}");
                 
                 $layoutPath = $this->findView("layouts/{$this->layout}");
                 if (!$layoutPath) {
@@ -90,9 +59,6 @@ class View {
                 
                 // Get the final rendered content
                 $finalContent = ob_get_clean();
-                
-                $this->debugDump("Layout rendered", ['length' => strlen($finalContent)]);
-                
                 return $finalContent;
             }
             
@@ -104,15 +70,12 @@ class View {
             while (ob_get_level() > $initialObLevel) {
                 ob_end_clean();
             }
-            
-            $this->debugDump("View render error: " . $e->getMessage());
             throw $e;
         }
     }
 
     public function renderContent() {
         if (empty($this->content)) {
-            $this->debugDump("Warning: Content is empty in renderContent()");
             return '';
         }
         return $this->content;
@@ -124,12 +87,10 @@ class View {
             throw new \Exception("View not found: {$view}");
         }
         
-        $this->debugLog("Found view at: {$viewPath}");
         ob_start();
         extract($this->data);
         require $viewPath;
         $content = ob_get_clean();
-        $this->debugLog("View content length: " . strlen($content));
         return $content;
     }
 
@@ -141,8 +102,6 @@ class View {
             throw new \Exception("Layout not found: {$this->layout}");
         }
         
-        $this->debugLog("Using layout at: {$layoutPath}");
-        
         // Extract data for the layout
         extract($this->data);
         
@@ -151,11 +110,9 @@ class View {
         try {
             require $layoutPath;
             $finalContent = ob_get_clean();
-            $this->debugLog("Layout rendered successfully", ['length' => strlen($finalContent)]);
             return $finalContent;
         } catch (\Throwable $e) {
             ob_end_clean();
-            $this->debugLog("Layout render error: " . $e->getMessage());
             throw $e;
         }
     }
@@ -163,10 +120,8 @@ class View {
     private function findView($view) {
         $view = str_replace('.', '/', $view);
         $path = __DIR__ . "/../Views/{$view}.php";
-        $this->debugLog("Looking for view at: {$path}");
         
         if (!file_exists($path)) {
-            $this->debugLog("View not found at: {$path}");
             return false;
         }
         
@@ -196,12 +151,6 @@ class View {
             
             // Get and return the partial content
             $content = ob_get_clean();
-            
-            $this->debugDump("Partial rendered", [
-                'name' => $name,
-                'content_length' => strlen($content)
-            ]);
-            
             echo $content;
             
         } catch (\Throwable $e) {
@@ -215,14 +164,8 @@ class View {
             $name = "partials/{$name}";
         }
         
-        $this->debugDump("Starting renderPartialToString: {$name}", [
-            'data' => $data,
-            'caller' => debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1]['function'] ?? 'unknown'
-        ]);
-        
         $partialPath = $this->findView($name);
         if (!$partialPath) {
-            $this->debugDump("Partial not found: {$name}");
             throw new \Exception("Partial not found: {$name}");
         }
         
@@ -233,12 +176,44 @@ class View {
         require $partialPath;
         $content = ob_get_clean();
         
-        $this->debugLog("renderPartialToString result", [
-            'name' => $name,
-            'content_length' => strlen($content)
-        ]);
-        
         return $content;
+    }
+
+    /**
+     * Render a partial view
+     *
+     * @param string $path Path to the partial view
+     * @param array $data Data to pass to the partial
+     * @return string The rendered partial content
+     * @throws \Exception If the partial view is not found
+     */
+    public function renderPartial($path, $data = []) {
+        $initialObLevel = ob_get_level();
+        
+        try {
+            ob_start();
+            
+            // Find the partial view file
+            $viewPath = $this->findView($path);
+            if (!$viewPath) {
+                throw new \Exception("Partial view not found: {$path}");
+            }
+            
+            // Extract data for the partial
+            extract(array_merge($this->data, $data));
+            
+            // Include the partial file
+            require $viewPath;
+            
+            return ob_get_clean();
+            
+        } catch (\Exception $e) {
+            // Clean up output buffers
+            while (ob_get_level() > $initialObLevel) {
+                ob_end_clean();
+            }
+            throw $e;
+        }
     }
 
     public function startSection($name) {
@@ -271,11 +246,5 @@ class View {
 
     public function renderNavigation() {
         $this->partial('common.navigation');
-    }
-
-    public function renderDebugBar() {
-        if ($this->debug) {
-            $this->partial('common.debug-bar');
-        }
     }
 }

@@ -1,4 +1,4 @@
-<?php
+<?php 
 /**
  * Base layout template
  */
@@ -12,30 +12,16 @@
     <title><?php echo isset($title) ? htmlspecialchars($title) : 'LorPHP Framework'; ?></title>
     
     <!-- Base path for all assets -->
-    <base href="/" />
+    <base href="/">
     
     <!-- TailwindCSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
     <!-- Custom styles -->
-    <?php 
-    try {
-        $this->renderStyles();
-        echo "<!-- Debug: Styles rendered successfully -->\n";
-    } catch (\Throwable $e) {
-        echo "<!-- Debug: Styles render error: " . htmlspecialchars($e->getMessage()) . " -->\n";
-    }
-    ?>
+    <?php $this->renderStyles(); ?>
     
     <!-- Scripts -->
-    <?php 
-    try {
-        $this->renderScripts();
-        echo "<!-- Debug: Scripts rendered successfully -->\n";
-    } catch (\Throwable $e) {
-        echo "<!-- Debug: Scripts render error: " . htmlspecialchars($e->getMessage()) . " -->\n";
-    }
-    ?>
+    <?php $this->renderScripts(); ?>
     
     <!-- Toast Notifications -->
     <?php echo $this->ui()->toast([
@@ -45,26 +31,14 @@
 </head>
 <body class="bg-gray-100">
     <!-- Navigation -->
-    <?php 
-    try {
-        $this->renderNavigation();
-        echo "<!-- Debug: Navigation rendered successfully -->\n";
-    } catch (\Throwable $e) {
-        echo "<!-- Debug: Navigation render error: " . htmlspecialchars($e->getMessage()) . " -->\n";
-    }
-    ?>
+    <?php $this->renderNavigation(); ?>
     
     <!-- Main Content -->
     <main class="container mx-auto px-4 py-8">
-        <?php 
-        try {
-            echo $this->renderContent();
-            echo "<!-- Debug: Main content rendered successfully -->\n";
-        } catch (\Throwable $e) {
-            echo "<!-- Debug: Main content render error: " . htmlspecialchars($e->getMessage()) . " -->\n";
-        }
-        ?>
+        <?php echo $this->renderContent(); ?>
     </main>
+    
+    <!-- Toast Component -->
     <?php include __DIR__ . '/../partials/components/toast.php'; ?>
     
     <!-- Footer -->

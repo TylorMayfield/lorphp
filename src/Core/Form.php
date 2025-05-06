@@ -12,6 +12,7 @@ class Form {
     private $method = 'POST';
     private $enctype = '';
     private $cssClass = 'mt-8 space-y-6';
+    private $submitClass = 'w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors';
     private $submitText = 'Submit'; // Added property with default value
     
     private $errorTypes = [
@@ -333,9 +334,20 @@ class Form {
     }
     
     /**
-     * Set submit button text
+     * Set the submit button CSS class
      * 
-     * @param string $text The text to display on the submit button
+     * @param string $class CSS class string
+     * @return Form
+     */
+    public function setSubmitClass($class) {
+        $this->submitClass = $class;
+        return $this;
+    }
+
+    /**
+     * Set the submit button text
+     * 
+     * @param string $text Submit button text
      * @return Form
      */
     public function setSubmitText($text) {
@@ -369,141 +381,56 @@ class Form {
      */
     public function renderField($name) {
         if (!isset($this->fields[$name])) {
-            $this->debugLog("Field not found: {$name}");
             return '';
         }
         
         $field = $this->fields[$name];
-        $error = $this->errors[$name] ?? null;
         
-        // Add error to field data if present
-        if ($error) {
-            $field['error'] = $error;
+        $html = '<div class="mb-4">';
+        if (!empty($field['label'])) {
+            $html .= sprintf(
+                '<label for="%s" class="block text-sm font-medium text-gray-700 mb-1">%s%s</label>',
+                htmlspecialchars($field['id']),
+                htmlspecialchars($field['label']),
+                $field['required'] ? '<span class="text-red-500">*</span>' : ''
+            );
         }
         
-        try {
-            $html = $this->view->renderPartialToString('forms/input', $field);
-            $this->debugLog("Field rendered successfully", [
-                'name' => $name, 
-                'length' => strlen($html)
-            ]);
-            return $html;
-        } catch (\Throwable $e) {
-            $this->debugLog("Field render error: " . $e->getMessage());
-            throw $e;
-        }
+        $html .= sprintf(
+            '<input type="%s" name="%s" id="%s" class="%s" %s value="%s" placeholder="%s">',
+            htmlspecialchars($field['type']),
+            htmlspecialchars($name),
+            htmlspecialchars($field['id']),
+            htmlspecialchars($field['class']),
+            $field['required'] ? 'required' : '',
+            htmlspecialchars($field['value'] ?? ''),
+            htmlspecialchars($field['placeholder'] ?? '')
+        );
+        
+        $html .= '</div>';
+        return $html;
     }
-
+    
     /**
      * Render the complete form
      * 
      * @return string
      */
     public function render() {
-        try {
-            ob_start();
-            
-            echo $this->open();
-            $this->debugLog("Form opened");
-            
-            // Render global form errors if any
-            if (!empty($this->errors['form'])) {
-                echo '<div class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">';
-                echo '<span class="block sm:inline">' . htmlspecialchars($this->errors['form']) . '</span>';
-                echo '</div>';
-            }
-            
-            // Wrap fields in a container
-            echo '<div class="space-y-4">';
-            
-            // Render each field directly
-            foreach ($this->fields as $name => $field) {
-                $this->renderFieldDirect($name);
-                $this->debugLog("Field rendered", ['name' => $name]);
-            }
-            
-            echo '</div>';
-            
-            // Add submit button using the submitText property
-            echo $this->submit($this->submitText);
-            
-            // Close the form
-            echo $this->close();
-            
-            $html = ob_get_clean();
-            $this->debugLog("Form rendered successfully", ['length' => strlen($html)]);
-            
-            return $html;
-        } catch (\Throwable $e) {
-            ob_end_clean();
-            $this->debugLog("Form render error: " . $e->getMessage());
-            throw $e;
-        }
-    }
-    
-    /**
-     * Render a field directly to output
-     */
-    private function renderFieldDirect($name) {
-        if (!isset($this->fields[$name])) {
-            $this->debugLog("Field not found: {$name}");
-            return;
+        $html = $this->open();
+        
+        foreach ($this->fields as $name => $_) {
+            $html .= $this->renderField($name);
         }
         
-        $field = $this->fields[$name];
-        $error = $this->errors[$name] ?? null;
+        $html .= sprintf(
+            '<button type="submit" class="%s">%s</button>',
+            htmlspecialchars($this->submitClass),
+            htmlspecialchars($this->submitText)
+        );
         
-        echo '<div class="mb-4">';
-        if (!empty($field['label'])) {
-            echo '<label for="' . htmlspecialchars($field['id']) . '" class="block text-sm font-medium text-gray-700 mb-1">';
-            echo htmlspecialchars($field['label']);
-            if ($field['required']) {
-                echo '<span class="text-red-500">*</span>';
-            }
-            echo '</label>';
-        }
-        
-        echo '<div class="relative">';
-        echo '<input';
-        
-        $attrs = [
-            'type' => $field['type'],
-            'id' => $field['id'],
-            'name' => $field['id'],
-            'value' => $field['value'] ?? '',
-            'class' => 'appearance-none relative block w-full px-3 py-2 border ' . 
-                      ($error ? 'border-red-300' : 'border-gray-300') . 
-                      ' placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 ' .
-                      'focus:border-indigo-500 focus:z-10 sm:text-sm ' . ($field['class'] ?? '')
-        ];
-        
-        if ($field['required']) {
-            $attrs['required'] = 'required';
-        }
-        
-        if (!empty($field['placeholder'])) {
-            $attrs['placeholder'] = $field['placeholder'];
-        }
-        
-        foreach ($attrs as $key => $value) {
-            if ($value === 'required') {
-                echo " $key";
-            } else {
-                echo ' ' . $key . '="' . htmlspecialchars($value) . '"';
-            }
-        }
-        
-        echo '>';
-        
-        if ($error) {
-            echo '<div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">';
-            echo '<svg class="h-5 w-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">';
-            echo '<path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />';
-            echo '</svg></div>';
-            echo '<p class="mt-1 text-sm text-red-600">' . htmlspecialchars($error) . '</p>';
-        }
-        
-        echo '</div></div>';
+        $html .= $this->close();
+        return $html;
     }
     
     /**

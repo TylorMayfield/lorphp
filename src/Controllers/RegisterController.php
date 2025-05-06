@@ -21,7 +21,6 @@ class RegisterController extends Controller
             $this->config = include $configPath;
         } else {
             $this->config = [];
-            error_log("Auth config file not found: $configPath");
         }
     }
     
@@ -44,8 +43,6 @@ class RegisterController extends Controller
         
         // Handle form submission
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $this->debugLog("Processing registration form submission");
-            
             if ($form->validate()) {
                 $data = $form->getData();
                 
@@ -65,7 +62,6 @@ class RegisterController extends Controller
                     $user->setPassword($data['password']);
                     
                     if ($user->save()) {
-                        $this->debugLog("User registered successfully: " . $data['email']);
                         $this->app->setState('user', $user);
                         return $this->redirectTo($config['routes']['register_redirect'] ?? '/dashboard');
                     }
@@ -82,16 +78,11 @@ class RegisterController extends Controller
                     } else {
                         $form->addTypedError('form', 'database');
                     }
-                    $this->debugLog("Database error during registration: " . $e->getMessage());
-                    
                 } catch (\Exception $e) {
                     $form->addTypedError('form', 'invalid', [
                         'An unexpected error occurred. Our team has been notified.'
                     ]);
-                    $this->debugLog("Unexpected error during registration: " . $e->getMessage());
                 }
-            } else {
-                $this->debugLog("Form validation failed");
             }
         }
         
@@ -109,9 +100,6 @@ class RegisterController extends Controller
      */
     private function handleRegistration() 
     {
-        // Add debugging information
-        error_log("Registration form submitted with data: " . print_r($_POST, true));
-        
         // Extract form data
         $formData = [
             'name' => isset($_POST['name']) ? trim($_POST['name']) : '',
@@ -126,7 +114,6 @@ class RegisterController extends Controller
         
         // If there are errors, return to form with errors and old input
         if (!empty($errors)) {
-            error_log("Validation errors: " . implode(', ', $errors));
             $viewName = $this->config['views']['register'];
             $appName = $this->config['app_name'];
             
@@ -146,7 +133,6 @@ class RegisterController extends Controller
         $existingUser = $stmt->fetch(\PDO::FETCH_ASSOC);
         
         if ($existingUser) {
-            error_log("User with email {$formData['email']} already exists");
             $viewName = $this->config['views']['register'];
             $appName = $this->config['app_name'];
             
@@ -168,14 +154,10 @@ class RegisterController extends Controller
 
         try {
             if ($user->save()) {
-                error_log("User successfully registered: {$formData['email']}");
                 $this->app->setState('user', $user);
                 return $this->redirectTo($this->config['routes']['register_redirect']);
-            } else {
-                error_log("Failed to save user: {$formData['email']}");
             }
         } catch (\Exception $e) {
-            error_log("Exception during user registration: " . $e->getMessage());
         }
 
         $viewName = $this->config['views']['register'];

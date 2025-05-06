@@ -110,7 +110,6 @@ class User extends Model {
             
             return null;
         } catch (\Exception $e) {
-            error_log("Authentication error: " . $e->getMessage());
             return false;
         }
     }
@@ -120,7 +119,7 @@ class User extends Model {
      * 
      * @return string The JWT token
      */
-    private function generateJWT(): string {
+    public function generateJWT(): string {
         $header = [
             'alg' => 'HS256',
             'typ' => 'JWT'
@@ -221,7 +220,6 @@ class User extends Model {
             // Update existing user
             return $db->update($this->table, $data, ['id' => $this->id]);
         } catch (\Exception $e) {
-            error_log("Error saving user: " . $e->getMessage());
             return false;
         }
     }
@@ -238,5 +236,37 @@ class User extends Model {
         $data[6] = chr((ord($data[6]) & 0x0f) | 0x40); // set version to 0100
         $data[8] = chr((ord($data[8]) & 0x3f) | 0x80); // set bits 6-7 to 10
         return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
+    }
+
+    /**
+     * Find a user by their email address
+     *
+     * @param string $email The email address to search for
+     * @return User|null The user if found, null otherwise
+     */
+    public static function findByEmail(string $email): ?User {
+        $db = Database::getInstance();
+        
+        $sql = "SELECT * FROM users WHERE email = ?";
+        $stmt = $db->query($sql, [$email]);
+        $userData = $stmt->fetch(\PDO::FETCH_ASSOC);
+        
+        if (!$userData) {
+            return null;
+        }
+        
+        $user = new User();
+        $user->fill($userData);
+        return $user;
+    }
+
+    /**
+     * Verify if the provided password matches the user's password
+     *
+     * @param string $password The password to verify
+     * @return bool True if password matches, false otherwise
+     */
+    public function verifyPassword(string $password): bool {
+        return password_verify($password, $this->password);
     }
 }

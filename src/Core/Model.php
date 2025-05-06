@@ -21,40 +21,28 @@ abstract class Model {
     }
 
     public function __get($name) {
-        error_log("[Model Debug] Getting property '$name'");
         if (array_key_exists($name, $this->attributes)) {
-            error_log("[Model Debug] Found in attributes: " . print_r($this->attributes[$name], true));
             return $this->attributes[$name];
         }
         if (array_key_exists($name, $this->relations)) {
-            error_log("[Model Debug] Found in relations: " . ($this->relations[$name] ? get_class($this->relations[$name]) : 'null'));
             return $this->relations[$name];
         }
-        error_log("[Model Debug] Property not found in attributes or relations");
         return null;
     }
 
     public function __set($name, $value) {
-        error_log("[Model Debug] Setting property '$name' to: " . print_r($value, true));
         $this->attributes[$name] = $value;
     }
 
     protected function loadRelation(string $name, string $class, string $foreignKey) {
-        error_log("[Model Debug] Loading relation '$name' with foreign key '$foreignKey'");
-        error_log("[Model Debug] Current attributes: " . print_r($this->attributes, true));
-        
         if (!isset($this->relations[$name])) {
             if (!isset($this->attributes[$foreignKey])) {
-                error_log("[Model Debug] Foreign key '$foreignKey' not found in attributes");
                 return null;
             }
 
             $db = Database::getInstance();
             $table = (new $class)->table;
-            error_log("[Model Debug] Looking up in table '$table' with ID: " . $this->attributes[$foreignKey]);
-            
             $data = $db->findOne($table, ['id' => $this->attributes[$foreignKey]]);
-            error_log("[Model Debug] Query result: " . print_r($data, true));
             
             if ($data) {
                 $relation = new $class();
@@ -62,13 +50,9 @@ abstract class Model {
                     $relation->__set($key, $value);
                 }
                 $this->relations[$name] = $relation;
-                error_log("[Model Debug] Relation loaded successfully");
             } else {
-                error_log("[Model Debug] No data found for relation");
                 $this->relations[$name] = null;
             }
-        } else {
-            error_log("[Model Debug] Using cached relation");
         }
         
         return $this->relations[$name];
@@ -156,7 +140,7 @@ abstract class Model {
             unset($data['id']); // Remove ID from update data
             return $db->update($this->table, $data, ['id' => $this->id]);
         } catch (\Exception $e) {
-            error_log("Error saving model: " . $e->getMessage());
+            $this->errors[] = $e->getMessage();
             return false;
         }
     }
@@ -196,5 +180,19 @@ abstract class Model {
         }
         
         return $model;
+    }
+    
+    /**
+     * Fill the model with an array of attributes.
+     *
+     * @param array $attributes
+     * @return $this
+     */
+    public function fill(array $attributes) {
+        foreach ($attributes as $key => $value) {
+            $this->__set($key, $value);
+        }
+        
+        return $this;
     }
 }

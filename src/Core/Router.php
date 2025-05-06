@@ -24,14 +24,12 @@ class Router {
             $method = $_SERVER['REQUEST_METHOD'];
             $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
             
-            error_log("Router: Method=$method, URI=$uri");
-            
             foreach ($this->routes as $route) {
                     $params = [];
                     if ($route['method'] === $method && $this->matchPath($route['path'], $uri, $params)) {
                         // Handle POST data
                         if ($method === 'POST' && empty($_POST) && !empty($_SERVER['CONTENT_LENGTH'])) {
-                            error_log("Router: POST data missing but content length exists. Raw input: " . file_get_contents('php://input'));
+                            file_get_contents('php://input');
                         }
                         
                         // Clear any output so far
@@ -66,6 +64,10 @@ class Router {
     }
 
     private function matchPath($pattern, $uri, &$params = []) {
+        // Normalize URIs by removing trailing slashes except for root
+        $uri = $uri === '/' ? '/' : rtrim($uri, '/');
+        $pattern = $pattern === '/' ? '/' : rtrim($pattern, '/');
+        
         // Check for exact match first
         if ($pattern === $uri) {
             return true;
@@ -95,8 +97,6 @@ class Router {
                 list($controller, $method) = explode('@', $handler);
                 $controller = "LorPHP\\Controllers\\$controller";
                 
-                error_log("Router: Creating controller {$controller} with params: " . print_r($params, true));
-                
                 if (!class_exists($controller)) {
                     throw new \Exception("Controller not found: {$controller}");
                 }
@@ -108,7 +108,6 @@ class Router {
             throw new \Exception("Invalid route handler");
             
         } catch (\Throwable $e) {
-            error_log("Router handler error: " . $e->getMessage());
             throw $e;
         }
     }

@@ -75,6 +75,11 @@ class Application {
         $router->get('/dashboard', 'DashboardController@index');
         $router->post('/logout', 'AuthController@logout');
         
+        // Grafana Metrics Routes
+        $router->post('/metrics/query', 'MetricsController@query');
+        $router->get('/metrics/search', 'MetricsController@search');
+        $router->get('/metrics/health', 'MetricsController@health');
+        
         // CRM Routes
         $router->get('/clients', 'ClientController@index');
         $router->get('/clients/create', 'ClientController@create');
@@ -89,8 +94,6 @@ class Application {
                 echo $response;
             }
         } catch (\Throwable $e) {
-            // Log the error
-            error_log("Application error: " . $e->getMessage());
             if ($this->config['app']['debug'] ?? false) {
                 echo "<pre>Error: " . htmlspecialchars($e->getMessage()) . "\n" . 
                      htmlspecialchars($e->getTraceAsString()) . "</pre>";
