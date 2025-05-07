@@ -45,11 +45,7 @@ class User extends Model {
      * @return Organization|null
      */
     public function getOrganization(): ?Organization {
-        error_log("[User Debug] Getting organization");
-        error_log("[User Debug] Current attributes: " . print_r($this->attributes, true));
-        $org = $this->loadRelation('organization', Organization::class, 'organization_id');
-        error_log("[User Debug] Loaded organization: " . ($org ? "Found" : "Not found"));
-        return $org;
+        return $this->loadRelation('organization', Organization::class, 'organization_id');
     }
 
     /**
@@ -261,6 +257,28 @@ class User extends Model {
     }
 
     /**
+     * Find a user by ID
+     * @param string $id
+     * @return ?User
+     */
+    public static function findById(string $id): ?User {
+        $db = Database::getInstance();
+        $stmt = $db->query("SELECT * FROM users WHERE id = ?", [$id]);
+        $data = $stmt->fetch(\PDO::FETCH_ASSOC);
+        
+        if (!$data) {
+            return null;
+        }
+        
+        $user = new self();
+        foreach ($data as $key => $value) {
+            $user->$key = $value;
+        }
+        
+        return $user;
+    }
+
+    /**
      * Verify if the provided password matches the user's password
      *
      * @param string $password The password to verify
@@ -268,5 +286,71 @@ class User extends Model {
      */
     public function verifyPassword(string $password): bool {
         return password_verify($password, $this->password);
+    }
+    
+    /**
+     * Get all users in the system
+     * @return array
+     */
+    public static function all(): array {
+        $db = Database::getInstance();
+        $results = $db->query("SELECT * FROM users ORDER BY created_at DESC")->fetchAll(\PDO::FETCH_ASSOC);
+        
+        return array_map(function($data) {
+            $user = new self();
+            foreach ($data as $key => $value) {
+                $user->$key = $value;
+            }
+            return $user;
+        }, $results);
+    }
+
+    /**
+     * Get the user's role name
+     * @return ?string
+     */
+    public function getRole(): ?string {
+        if (!isset($this->role_id)) {
+            error_log("User {$this->email} has no role_id set");
+            return null;
+        }
+        
+        $db = Database::getInstance();
+        $stmt = $db->query("SELECT name FROM roles WHERE id = ?", [$this->role_id]);
+        $role = $stmt->fetch(\PDO::FETCH_ASSOC);
+        
+        $result = $role ? $role['name'] : null;
+        error_log("Found role: " . ($result ?? 'null'));
+        return $result;
+    }
+
+    /**
+     * Check if user has a specific role
+     * @param string $roleName Role name to check (e.g., 'admin', 'manager', 'user')
+     * @return bool
+     */
+    public function hasRole(string $roleName): bool {
+        $db = Database::getInstance();
+        $stmt = $db->query("
+            SELECT COUNT(*) as count
+            FROM roles
+            WHERE id = ? AND name = ?
+        ", [$this->role_id, $roleName]);
+        
+        $result = $stmt->fetch(\PDO::FETCH_ASSOC);
+        return (int)$result['count'] > 0;
+    }
+
+    /**
+     * Check if user has a specific permission
+     * @param string $permission
+     * @return bool
+     */
+    public function hasPermission(string $permission): bool {
+        if (!isset($this->role_id)) {
+            return false;
+        }
+        
+        return Permission::hasPermission($this->role_id, $permission);
     }
 }

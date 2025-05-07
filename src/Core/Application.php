@@ -84,6 +84,12 @@ class Application {
         $router->get('/settings', 'SettingsController@index');
         $router->post('/settings/update', 'SettingsController@update');
 
+        // Admin Routes
+        $router->get('/admin', 'AdminController@index');
+        $router->get('/admin/users', 'AdminController@users');
+        $router->get('/admin/organizations', 'AdminController@organizations');
+        $router->post('/admin/users/{id}/toggle-status', 'AdminController@toggleUserStatus');
+
         // CRM Routes
         $router->get('/clients', 'ClientController@index');
         $router->get('/clients/create', 'ClientController@create');

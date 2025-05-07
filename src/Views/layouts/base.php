@@ -2,6 +2,7 @@
 /**
  * Base layout template
  */
+use LorPHP\Core\RoleMiddleware;
 ?>
 <!DOCTYPE html>
 <html lang="en">

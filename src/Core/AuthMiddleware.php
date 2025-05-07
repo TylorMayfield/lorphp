@@ -4,12 +4,55 @@ namespace LorPHP\Core;
 use LorPHP\Models\User;
 
 class AuthMiddleware {
+    private const ADMIN_ROLE_ID = '5c6eec33-1150-4e0b-bd2d-a8c0f4a8fd8f';
+
+    /**
+     * Ensure admin account exists
+     */
+    private static function ensureAdminExists(): void {
+        $app = Application::getInstance();
+        $adminConfig = $app->getConfig('admin.admin_account');
+        
+        if (!$adminConfig) {
+            return;
+        }
+
+        $db = Database::getInstance();
+        $admin = $db->findOne('users', ['email' => $adminConfig['email']]);
+        
+        if (!$admin) {
+            // Create admin organization
+            $org = new \LorPHP\Models\Organization();
+            $org->name = "System Administration";
+            $org->save();
+
+            // Create admin user
+            $user = new \LorPHP\Models\User();
+            $user->name = $adminConfig['name'];
+            $user->email = $adminConfig['email'];
+            $user->setPassword($adminConfig['password']);
+            $user->role_id = self::ADMIN_ROLE_ID;
+            $user->organization_id = $org->id;
+            $user->active = 1;
+            $user->save();
+        } else {
+            // Ensure existing admin has the correct role
+            if (!isset($admin['role_id']) || $admin['role_id'] !== self::ADMIN_ROLE_ID) {
+                $db->update('users', 
+                    ['role_id' => self::ADMIN_ROLE_ID, 'active' => 1],
+                    ['id' => $admin['id']]
+                );
+            }
+        }
+    }
+
     /**
      * Handle authentication check
      *
      * @return bool
      */
     public static function handle(): bool {
+        self::ensureAdminExists();
         $token = $_COOKIE['jwt'] ?? null;
         
         if (!$token) {

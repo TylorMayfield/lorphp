@@ -59,7 +59,6 @@ class Organization extends Model {
                 $sql .= " LIMIT " . (int)$conditions['limit'];
             }
 
-            error_log("[Organization Debug] Running query: " . $sql . " with params: " . print_r($params, true));
             $stmt = $db->query($sql, $params);
             
             $clients = [];
@@ -70,11 +69,8 @@ class Organization extends Model {
                 }
                 $clients[] = $client;
             }
-            error_log("[Organization Debug] Found " . count($clients) . " clients");
             return $clients;
         } catch (\Exception $e) {
-            error_log("Error getting clients: " . $e->getMessage());
-            error_log("Stack trace: " . $e->getTraceAsString());
             return [];
         }
     }
@@ -96,8 +92,24 @@ class Organization extends Model {
             
             return $users;
         } catch (\Exception $e) {
-            error_log("Error getting users: " . $e->getMessage());
             return [];
         }
+    }
+    
+    /**
+     * Get all organizations in the system
+     * @return array
+     */
+    public static function all(): array {
+        $db = Database::getInstance();
+        $results = $db->query("SELECT * FROM organizations ORDER BY created_at DESC")->fetchAll(\PDO::FETCH_ASSOC);
+        
+        return array_map(function($data) {
+            $org = new self();
+            foreach ($data as $key => $value) {
+                $org->$key = $value;
+            }
+            return $org;
+        }, $results);
     }
 }

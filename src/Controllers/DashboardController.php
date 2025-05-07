@@ -14,6 +14,12 @@ class DashboardController extends Controller {
     }
 
     public function index() {
+        // Redirect admin users to admin dashboard
+        if ($this->user && $this->user->role === 'admin') {
+            header('Location: /admin');
+            exit;
+        }
+
         // Use $this->user which is set in the parent Controller class
         $stats = $this->dashboardService->getStats($this->user);
         $recentClients = $this->dashboardService->getRecentClients($this->user);
