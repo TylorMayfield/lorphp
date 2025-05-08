@@ -52,11 +52,14 @@ class PackageController extends Controller {
             return $this->redirectTo('/packages');
         }
 
+        // Get all assigned clients for this package
+        $clients = $package->getClients();
+
         // Get all clients that don't have this package assigned
         $allClients = $this->user->getOrganizationClients();
         $assignedClientIds = array_map(function($client) {
             return $client->id;
-        }, $package->getClients());
+        }, $clients);
 
         $availableClients = array_filter($allClients, function($client) use ($assignedClientIds) {
             return !in_array($client->id, $assignedClientIds);
@@ -65,6 +68,7 @@ class PackageController extends Controller {
         return $this->view('packages/view', [
             'title' => $package->name,
             'package' => $package,
+            'clients' => $clients,
             'availableClients' => $availableClients
         ]);
     }
@@ -203,9 +207,19 @@ class PackageController extends Controller {
     }
     
     private function getPackageById($id) {
-        return Package::findOne([
+        $row = Package::findOne([
             'id' => $id,
             'organization_id' => $this->user->organization_id
         ]);
+        
+        if (!$row) {
+            return null;
+        }
+
+        $package = new Package();
+        foreach ($row as $key => $value) {
+            $package->__set($key, $value);
+        }
+        return $package;
     }
 }
