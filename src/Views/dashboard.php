@@ -6,7 +6,7 @@ $this->setLayout('base');
 ?>    
 <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8 dashboard-content">
         <!-- Stats Overview -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
             <?php echo $this->ui()->statsCard()
                 ->label('Total Clients')
                 ->value($stats['totalClients'])
@@ -21,6 +21,14 @@ $this->setLayout('base');
                 ->color('bg-green-500')
                 ->icon('<svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>'); ?>
+                
+            <?php echo $this->ui()->statsCard()
+                ->label('Total Packages')
+                ->value($stats['totalPackages'])
+                ->color('bg-yellow-500')
+                ->icon('<svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                 </svg>'); ?>
 
             <?php echo $this->ui()->statsCard()
@@ -102,7 +110,38 @@ $this->setLayout('base');
                     </div>
                 </div>
             </div>
+
+            <!-- Packages -->
+            <div class="bg-white shadow rounded-lg p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-medium text-gray-900">Packages</h3>
+                    <a href="/packages/create" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700">Add Package</a>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <?php 
+                    ob_start();
+                    foreach ($recentPackages ?? [] as $package): ?>
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900"><?php echo htmlspecialchars($package->name); ?></div>
+                                <div class="text-sm text-gray-500">$<?php echo number_format($package->price, 2); ?></div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                <a href="/packages/<?php echo $package->id; ?>" class="text-indigo-600 hover:text-indigo-900">View</a>
+                            </td>
+                        </tr>
+                    <?php endforeach;
+                    $packageTableContent = ob_get_clean();
+                    
+                    echo $this->ui()->table(['headers' => ['Package Details', 'Actions']])
+                        ->withSlot('default', $packageTableContent); ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
+</div>
 </body>
 </html>

@@ -75,6 +75,13 @@ class Schema {
         return $this;
     }
     
+    public function decimal($name, $precision = 8, $scale = 2) {
+        $column = "{$name} DECIMAL({$precision},{$scale})";
+        $column .= " NOT NULL";
+        $this->columns[] = $column;
+        return $this;
+    }
+
     public function default($value) {
         if ($this->isAlterTable) {
             $lastIdx = count($this->alterCommands) - 1;

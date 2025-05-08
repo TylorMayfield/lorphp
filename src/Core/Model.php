@@ -109,6 +109,8 @@ abstract class Model {
                 return strlen($value) >= $param;
             case 'max':
                 return strlen($value) <= $param;
+            case 'email':
+                return empty($value) || filter_var($value, FILTER_VALIDATE_EMAIL) !== false;
             case 'pattern':
                 return preg_match($param, $value);
             default:
@@ -118,6 +120,19 @@ abstract class Model {
 
     public function save(): bool {
         try {
+            // Validate all fields against schema
+            foreach ($this->schema as $field => $config) {
+                $value = $this->attributes[$field] ?? null;
+                if (!$this->validateType($value, $config['type'])) {
+                    $this->errors[] = "Invalid type for field {$field}";
+                    return false;
+                }
+                if (!$this->validateRules($value, $config['rules'] ?? [])) {
+                    $this->errors[] = "Validation failed for field {$field}";
+                    return false;
+                }
+            }
+
             $db = Database::getInstance();
             $now = date('Y-m-d H:i:s');
             
@@ -134,13 +149,21 @@ abstract class Model {
                 if ($this->useUuid) {
                     $data['id'] = $this->id;
                 }
-                return $db->insert($this->table, $data) !== false;
+                $success = $db->insert($this->table, $data) !== false;
+            } else {
+                unset($data['id']); // Remove ID from update data
+                $success = $db->update($this->table, $data, ['id' => $this->id]);
             }
 
-            unset($data['id']); // Remove ID from update data
-            return $db->update($this->table, $data, ['id' => $this->id]);
+            if (!$success) {
+                $this->errors[] = "Failed to save to database";
+                return false;
+            }
+
+            return true;
         } catch (\Exception $e) {
             $this->errors[] = $e->getMessage();
+            error_log("Error saving {$this->table} record: " . $e->getMessage());
             return false;
         }
     }

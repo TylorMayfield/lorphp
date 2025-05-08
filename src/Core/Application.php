@@ -95,7 +95,21 @@ class Application {
         $router->get('/clients/create', 'ClientController@create');
         $router->post('/clients', 'ClientController@create');
         $router->get('/clients/{id}', 'ClientController@show');
+        $router->get('/clients/{id}/edit', 'ClientController@edit');
+        $router->post('/clients/{id}/update', 'ClientController@update');
+        $router->post('/clients/{id}/delete', 'ClientController@delete');
         $router->post('/clients/{id}/contacts', 'ClientController@addContact');
+
+        // Package Routes
+        $router->get('/packages', 'PackageController@index');
+        $router->get('/packages/create', 'PackageController@create');
+        $router->post('/packages', 'PackageController@create');
+        $router->get('/packages/{id}', 'PackageController@show');
+        $router->get('/packages/{id}/edit', 'PackageController@edit');
+        $router->post('/packages/{id}/update', 'PackageController@update');
+        $router->post('/packages/{id}/delete', 'PackageController@delete');
+        $router->post('/packages/{id}/assign', 'PackageController@assignToClient');
+        $router->post('/packages/{id}/clients/{clientId}/remove', 'PackageController@removeFromClient');
         
         // Dispatch the request
         try {

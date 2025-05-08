@@ -353,4 +353,24 @@ class User extends Model {
         
         return Permission::hasPermission($this->role_id, $permission);
     }
+
+    /**
+     * Get the user's organization packages
+     * @return array
+     */
+    public function getOrganizationPackages() {
+        $db = Database::getInstance();
+        $packages = [];
+        
+        $stmt = $db->query("SELECT * FROM packages WHERE organization_id = ?", [$this->organization_id]);
+        while ($row = $stmt->fetch(\PDO::FETCH_ASSOC)) {
+            $package = new Package();
+            foreach ($row as $key => $value) {
+                $package->__set($key, $value);
+            }
+            $packages[] = $package;
+        }
+        
+        return $packages;
+    }
 }

@@ -112,4 +112,26 @@ class Organization extends Model {
             return $org;
         }, $results);
     }
+    
+    public function getPackages(): array {
+        try {
+            $db = Database::getInstance();
+            $sql = "SELECT * FROM packages WHERE organization_id = ? ORDER BY name ASC";
+            $stmt = $db->query($sql, [$this->id]);
+            
+            $packages = [];
+            while ($row = $stmt->fetch(\PDO::FETCH_ASSOC)) {
+                $package = new Package();
+                foreach ($row as $key => $value) {
+                    $package->$key = $value;
+                }
+                $packages[] = $package;
+            }
+            
+            return $packages;
+        } catch (\Exception $e) {
+            error_log("Error getting organization packages: " . $e->getMessage());
+            return [];
+        }
+    }
 }

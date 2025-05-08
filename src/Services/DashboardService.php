@@ -12,7 +12,8 @@ class DashboardService {
                 'last_contact_date' => date('Y-m-d', strtotime('-7 days'))
             ])),
             'organizationUsers' => $user->getOrganization() ? 
-                count($user->getOrganization()->getUsers()) : 0
+                count($user->getOrganization()->getUsers()) : 0,
+            'totalPackages' => count($user->getOrganizationPackages())
         ];
     }
 

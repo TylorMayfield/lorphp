@@ -27,9 +27,16 @@ $this->setLayout('base');
                                 <?php endif; ?>
                             </div>
                         </div>
-                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php echo $client->status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'; ?>">
-                            <?php echo ucfirst($client->status); ?>
-                        </span>
+                        <div class="flex space-x-3">
+                            <a href="/clients/<?php echo $client->id; ?>/edit" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700">
+                                Edit Client
+                            </a>
+                            <form action="/clients/<?php echo $client->id; ?>/delete" method="POST" onsubmit="return confirm('Are you sure you want to delete this client?');" class="inline">
+                                <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded-md text-sm hover:bg-red-700">
+                                    Delete Client
+                                </button>
+                            </form>
+                        </div>
                     </div>
 
                     <?php if ($client->notes): ?>

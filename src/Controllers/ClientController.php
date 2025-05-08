@@ -2,6 +2,7 @@
 namespace LorPHP\Controllers;
 
 use LorPHP\Core\Controller;
+use LorPHP\Core\Database;
 use LorPHP\Models\Client;
 
 class ClientController extends Controller {
@@ -94,6 +95,73 @@ class ClientController extends Controller {
         ]);
     }
     
+    public function edit($id) {
+        $client = $this->getClientById($id);
+        
+        if (!$client) {
+            $this->withError('Client not found');
+            return $this->redirectTo('/clients');
+        }
+        
+        return $this->view('clients/edit', [
+            'title' => 'Edit ' . $client->name,
+            'client' => $client
+        ]);
+    }
+
+    public function update($id) {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            return $this->redirectTo("/clients/{$id}");
+        }
+
+        $client = $this->getClientById($id);
+        if (!$client) {
+            $this->withError('Client not found');
+            return $this->redirectTo('/clients');
+        }
+
+        // Update client fields
+        $client->name = $_POST['name'] ?? $client->name;
+        $client->email = $_POST['email'] ?? $client->email;
+        $client->phone = $_POST['phone'] ?? $client->phone;
+        $client->notes = $_POST['notes'] ?? $client->notes;
+
+        if (!$client->save()) {
+            $errors = $client->getErrors();
+            $errorMessage = !empty($errors) ? implode(', ', $errors) : 'Failed to update client';
+            $this->withError($errorMessage);
+            return $this->redirectTo("/clients/{$id}/edit");
+        }
+
+        $this->withSuccess('Client updated successfully');
+        return $this->redirectTo("/clients/{$id}");
+    }
+
+    public function delete($id) {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            return $this->redirectTo("/clients/{$id}");
+        }
+
+        $client = $this->getClientById($id);
+        if (!$client) {
+            $this->withError('Client not found');
+            return $this->redirectTo('/clients');
+        }
+
+        try {
+            $db = Database::getInstance();
+            if ($db->delete('clients', ['id' => $client->id])) {
+                $this->withSuccess('Client deleted successfully');
+                return $this->redirectTo('/clients');
+            }
+        } catch (\Exception $e) {
+            error_log("Error deleting client: " . $e->getMessage());
+        }
+
+        $this->withError('Failed to delete client');
+        return $this->redirectTo("/clients/{$id}");
+    }
+
     private function getClientById($id) {
         return Client::findOne([
             'id' => $id,
