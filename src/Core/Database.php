@@ -326,33 +326,55 @@ class Database {
     }
 
     public function update($table, $data, $conditions) {
-        // Get table info to determine column types
-        $tableInfo = $this->pdo->query("PRAGMA table_info(" . $table . ")")->fetchAll(\PDO::FETCH_ASSOC);
-        $columnTypes = [];
-        foreach ($tableInfo as $column) {
-            $columnTypes[$column['name']] = $column['type'];
+        try {
+            // Get table info to determine column types
+            $tableInfo = $this->pdo->query("PRAGMA table_info(" . $table . ")")->fetchAll(\PDO::FETCH_ASSOC);
+            $columnTypes = [];
+            foreach ($tableInfo as $column) {
+                $columnTypes[$column['name']] = $column['type'];
+            }
+            
+            if (empty($data)) {
+                error_log("[DB Debug] No data provided for update of table {$table}");
+                return false;
+            }
+
+            $set = [];
+            $params = [];
+            $where = [];
+            foreach ($data as $field => $value) {
+                if (!isset($columnTypes[$field])) {
+                    error_log("[DB Debug] Skipping unknown column {$field} in table {$table}");
+                    continue;
+                }
+                $set[] = "$field = ?";
+                $type = $columnTypes[$field] ?? null;
+                $params[] = $this->convertValueForSQLite($value, $type);
+            }
+
+            if (empty($set)) {
+                error_log("[DB Debug] No valid columns to update in table {$table}");
+                return false;
+            }
+            
+            foreach ($conditions as $field => $value) {
+                $where[] = "$field = ?";
+                $type = $columnTypes[$field] ?? null;
+                $params[] = $this->convertValueForSQLite($value, $type);
+            }
+            
+            $setClause = implode(', ', $set);
+            $whereClause = implode(' AND ', $where);
+            
+            $sql = "UPDATE {$table} SET {$setClause} WHERE {$whereClause}";
+            error_log("[DB Debug] Running update query: " . $sql . " with params: " . json_encode($params));
+            
+            $stmt = $this->pdo->prepare($sql);
+            return $stmt->execute($params);
+        } catch (\Exception $e) {
+            error_log("[DB Error] Failed to update table {$table}: " . $e->getMessage());
+            return false;
         }
-        
-        $set = [];
-        $params = [];
-        foreach ($data as $field => $value) {
-            $set[] = "$field = ?";
-            $type = $columnTypes[$field] ?? null;
-            $params[] = $this->convertValueForSQLite($value, $type);
-        }
-        
-        foreach ($conditions as $field => $value) {
-            $where[] = "$field = ?";
-            $type = $columnTypes[$field] ?? null;
-            $params[] = $this->convertValueForSQLite($value, $type);
-        }
-        
-        $setClause = implode(', ', $set);
-        $whereClause = implode(' AND ', $where);
-        
-        $sql = "UPDATE {$table} SET {$setClause} WHERE {$whereClause}";
-        $stmt = $this->pdo->prepare($sql);
-        return $stmt->execute($params);
     }
 
     public function delete($table, $conditions) {

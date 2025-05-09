@@ -2,6 +2,7 @@
 namespace LorPHP\Core;
 
 use LorPHP\Core\Traits\HasUuid;
+use LorPHP\Core\Traits\Auditable;
 
 abstract class Model {
     use HasUuid;
@@ -13,10 +14,14 @@ abstract class Model {
     protected $useUuid = true;
     protected $timestamps = true;
     protected $relations = [];
+    protected $isAuditable = false;
 
     public function __construct() {
         if ($this->useUuid) {
             $this->initializeHasUuid();
+        }
+        if ($this->isAuditable && in_array(Auditable::class, Helpers::class_uses_recursive($this))) {
+            $this->initializeAuditable();
         }
     }
 
@@ -120,6 +125,13 @@ abstract class Model {
 
     public function save(): bool {
         try {
+            // Start transaction if auditing is enabled
+            $db = Database::getInstance();
+            $isAuditing = $this->isAuditable && in_array(Auditable::class, class_uses_recursive($this));
+            if ($isAuditing) {
+                $db->beginTransaction();
+            }
+
             // Validate all fields against schema
             foreach ($this->schema as $field => $config) {
                 $value = $this->attributes[$field] ?? null;
@@ -133,11 +145,15 @@ abstract class Model {
                 }
             }
 
-            $db = Database::getInstance();
+            // Only include fields that are defined in the schema
+            $data = [];
+            foreach ($this->schema as $field => $config) {
+                if (array_key_exists($field, $this->attributes)) {
+                    $data[$field] = $this->attributes[$field];
+                }
+            }
+            
             $now = date('Y-m-d H:i:s');
-            
-            $data = $this->attributes;
-            
             if ($this->timestamps) {
                 if (!isset($this->id)) {
                     $data['created_at'] = $now;
@@ -145,23 +161,35 @@ abstract class Model {
                 $data['updated_at'] = $now;
             }
 
-            if (!isset($this->id)) {
+            $isNew = !isset($this->id);
+            if ($isNew) {
                 if ($this->useUuid) {
                     $data['id'] = $this->id;
                 }
                 $success = $db->insert($this->table, $data) !== false;
             } else {
-                unset($data['id']); // Remove ID from update data
                 $success = $db->update($this->table, $data, ['id' => $this->id]);
             }
 
             if (!$success) {
+                if ($isAuditing) {
+                    $db->rollBack();
+                }
                 $this->errors[] = "Failed to save to database";
                 return false;
             }
 
+            // Create audit record if needed
+            if ($isAuditing) {
+                 $this->auditEvent($isNew ? 'create' : 'update');
+                $db->commit();
+            }
+
             return true;
         } catch (\Exception $e) {
+            if (isset($db) && $isAuditing) {
+                $db->rollBack();
+            }
             $this->errors[] = $e->getMessage();
             error_log("Error saving {$this->table} record: " . $e->getMessage());
             return false;

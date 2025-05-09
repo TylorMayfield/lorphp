@@ -76,11 +76,8 @@ class ClientController extends Controller {
     }
 
     public function show($id) {
-        $client = Client::findOne([
-            'id' => $id,
-            'organization_id' => $this->user->organization_id
-        ]);
-
+        $client = $this->getClientById($id);
+        
         if (!$client) {
             $this->withError('Client not found');
             return $this->redirectTo('/clients');
@@ -163,9 +160,19 @@ class ClientController extends Controller {
     }
 
     private function getClientById($id) {
-        return Client::findOne([
+        $row = Client::findOne([
             'id' => $id,
             'organization_id' => $this->user->organization_id
         ]);
+        
+        if (!$row) {
+            return null;
+        }
+
+        $client = new Client();
+        foreach ($row as $key => $value) {
+            $client->__set($key, $value);
+        }
+        return $client;
     }
 }

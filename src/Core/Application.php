@@ -58,13 +58,18 @@ class Application {
         // Check authentication status early
         AuthMiddleware::handle();
         
+        // Apply rate limiting
+        RateLimitMiddleware::handle();
+        
         $router = new Router();
         
         // Configure routes
         $router->get('/', 'HomeController@index');
+        $router->get('/offline', function() {
+            return (new View())->render('offline');
+        });
         $router->get('/test', function() {
-            $view = new View(true); // Enable debug mode
-            return $view->render('test');
+            return (new View())->render('test');
         });
         
         // Auth routes

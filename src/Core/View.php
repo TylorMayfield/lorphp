@@ -11,6 +11,19 @@ class View {
     private $data = [];
     private $sections = [];
     private $currentSection = null;
+    private static $instance = null;
+
+    public function __construct() {
+        self::$instance = $this;
+    }
+
+    public static function getInstance(): View {
+        if (self::$instance === null) {
+            self::$instance = new self();
+        }
+        return self::$instance;
+    }
+
     public function setLayout($layout) {
         $this->layout = $layout;
         return $this;
@@ -33,11 +46,12 @@ class View {
                 throw new \Exception("View not found: {$view}");
             }
             
-            // Extract data for view
+            // Extract data for view and make $this available
             extract($this->data);
-            
+            $__view = $this;
+
             // Include the view file
-            require $viewPath;
+            include $viewPath;
             
             // Get the view content
             $this->content = ob_get_clean();

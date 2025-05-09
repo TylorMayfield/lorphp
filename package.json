@@ -8,6 +8,7 @@
     "test:e2e": "cypress run",
     "test:ci": "start-server-and-test serve http://localhost:8000 test",
     "serve": "php -S localhost:8000 -t public",
+        "dev": "php -S localhost:8000 -t public",
     "migrate": "php bin/lor migrate:run",
     "migrate:rollback": "php bin/lor migrate:rollback",
     "cy:verify": "cypress verify",
@@ -23,5 +24,8 @@
     "@testing-library/cypress": "^10.0.1",
     "cypress": "^13.6.0",
     "start-server-and-test": "^2.0.3"
+  },
+  "dependencies": {
+    "sharp": "^0.34.1"
   }
 }

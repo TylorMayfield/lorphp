@@ -4,9 +4,12 @@ namespace LorPHP\Models;
 use LorPHP\Core\Model;
 use LorPHP\Core\Database;
 use LorPHP\Core\OrganizationScoped;
+use LorPHP\Core\Traits\Auditable;
 
 class Client extends Model {
-    use OrganizationScoped;
+    use OrganizationScoped, Auditable;
+    
+    protected $isAuditable = true;
     
     protected $table = 'clients';
     protected $useUuid = true;
