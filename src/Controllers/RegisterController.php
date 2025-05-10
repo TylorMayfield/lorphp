@@ -31,7 +31,7 @@ class RegisterController extends Controller
     {
         // Redirect if user is already logged in
         if ($this->app->getState('user')) {
-            return $this->redirectTo('/');
+            return $this->redirectTo('/dashboard');
         }
 
         // Load the auth config
