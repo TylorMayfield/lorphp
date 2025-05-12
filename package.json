@@ -8,7 +8,7 @@
     "test:e2e": "cypress run",
     "test:ci": "start-server-and-test serve http://localhost:8000 test",
     "serve": "php -S localhost:8000 -t public",
-        "dev": "php -S localhost:8000 -t public",
+    "dev": "php -S localhost:8000 -t public",
     "migrate": "php bin/lor migrate:run",
     "migrate:rollback": "php bin/lor migrate:rollback",
     "cy:verify": "cypress verify",
