@@ -10,13 +10,13 @@ class Table extends Component {
         $hover = $this->attr('hover', true);
         
         $tableClasses = $this->classes([
-            'min-w-full divide-y divide-gray-200' => true
+            'min-w-full divide-y divide-[#3f3f46]' => true
         ]);
         
         $rowClasses = $this->classes([
-            'bg-white' => !$striped,
-            'even:bg-gray-50' => $striped,
-            'hover:bg-gray-100' => $hover
+            'bg-[#18181b]/50' => !$striped,
+            'even:bg-[#27272a]/50' => $striped,
+            'hover:bg-[#3f3f46]/50 transition-colors duration-150' => $hover
         ]);
         ?>
         <div class="overflow-x-auto">
@@ -25,14 +25,14 @@ class Table extends Component {
                 <thead>
                     <tr>
                         <?php foreach ($headers as $header): ?>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th class="px-6 py-3 text-left text-xs font-medium text-[#a1a1aa] uppercase tracking-wider border-b border-[#3f3f46]">
                             <?php echo $header; ?>
                         </th>
                         <?php endforeach; ?>
                     </tr>
                 </thead>
                 <?php endif; ?>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody class="bg-transparent divide-y divide-[#3f3f46]">
                     <?php echo $this->slot('default'); ?>
                 </tbody>
             </table>

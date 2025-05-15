@@ -42,14 +42,18 @@ class Input extends Component {
         $error = $this->attr('error');
         
         $inputClasses = $this->classes([
-            'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm' => true,
-            'border-red-300' => isset($error)
+            'mt-1 block w-full px-4 py-3 rounded-xl bg-[#27272a]/50 border border-[#3f3f46] shadow-lg transition-all duration-200 text-[#fafafa] placeholder-[#71717a]' => true,
+            'hover:bg-[#27272a]/70 focus:bg-[#27272a]/70 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 focus:ring-offset-0' => true,
+            'border-red-500/20 focus:border-red-500 focus:ring-red-500 hover:border-red-500/30' => isset($error)
         ]);
         ?>
         <div>
             <?php if ($label): ?>
-                <label for="<?php echo $name; ?>" class="block text-sm font-medium text-gray-700">
+                <label for="<?php echo $name; ?>" class="block text-sm font-medium text-[#a1a1aa]">
                     <?php echo $label; ?>
+                    <?php if ($required): ?>
+                        <span class="text-red-400 ml-1">*</span>
+                    <?php endif; ?>
                 </label>
             <?php endif; ?>
             
@@ -64,7 +68,7 @@ class Input extends Component {
             />
             
             <?php if ($error): ?>
-                <p class="mt-2 text-sm text-red-600"><?php echo $error; ?></p>
+                <p class="mt-2 text-sm text-red-400"><?php echo $error; ?></p>
             <?php endif; ?>
         </div>
         <?php

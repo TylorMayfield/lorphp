@@ -6,6 +6,62 @@ module.exports = {
   ],
   theme: {
     extend: {
+      opacity: {
+        '15': '0.15',
+      },
+      animation: {
+        blob: "blob 7s infinite",
+        'gradient-x': 'gradient-x 15s ease infinite',
+        'shimmer': 'shimmer 2s linear infinite'
+      },
+      keyframes: {
+        blob: {
+          "0%": {
+            transform: "translate(0px, 0px) scale(1)",
+          },
+          "33%": {
+            transform: "translate(30px, -50px) scale(1.1)",
+          },
+          "66%": {
+            transform: "translate(-20px, 20px) scale(0.9)",
+          },
+          "100%": {
+            transform: "translate(0px, 0px) scale(1)",
+          },
+        },
+        'gradient-x': {
+          '0%, 100%': {
+            'background-size': '200% 200%',
+            'background-position': 'left center'
+          },
+          '50%': {
+            'background-size': '200% 200%',
+            'background-position': 'right center'
+          }
+        },
+        shimmer: {
+          '100%': {
+            transform: 'translateX(100%)',
+          },
+        }
+      },
+      colors: {
+        background: {
+          DEFAULT: '#18181b', // dark background
+          light: '#27272a',
+        },
+        foreground: {
+          DEFAULT: '#fafafa', // light text
+          muted: '#a1a1aa',
+        },
+        primary: {
+          DEFAULT: '#6366f1', // indigo-500
+          dark: '#4f46e5',
+        },
+        accent: {
+          DEFAULT: '#06b6d4', // cyan-500
+        },
+      },
       transitionProperty: {
         'height': 'height',
         'spacing': 'margin, padding',

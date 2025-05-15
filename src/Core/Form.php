@@ -12,7 +12,7 @@ class Form {
     private $method = 'POST';
     private $enctype = '';
     private $cssClass = 'mt-8 space-y-6';
-    private $submitClass = 'w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors';
+    private $submitClass = 'w-full flex justify-center py-3 px-4 border border-[#27272a] rounded-xl shadow-lg text-sm font-medium text-white bg-gradient-to-r from-indigo-500 via-purple-500 to-blue-500 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-purple-500/50 transform transition-all duration-300 hover:scale-[1.02]';
     private $submitText = 'Submit'; // Added property with default value
     
     private $errorTypes = [
@@ -160,6 +160,24 @@ class Form {
         ], $options));
     }
     
+    /**
+     * Add textarea field
+     * 
+     * @param string $name Field name
+     * @param string $label Field label
+     * @param bool $required Whether field is required
+     * @param array $options Additional options
+     * @return Form
+     */
+    public function addTextarea($name, $label, $required = false, array $options = []) {
+        return $this->addField($name, array_merge([
+            'type' => 'textarea',
+            'label' => $label,
+            'required' => $required,
+            'rows' => $options['rows'] ?? 3
+        ], $options));
+    }
+
     /**
      * Add validation rule for a field
      * 
@@ -347,7 +365,7 @@ class Form {
     /**
      * Set the submit button text
      * 
-     * @param string $text Submit button text
+     * @param string $text Button text
      * @return Form
      */
     public function setSubmitText($text) {
@@ -355,6 +373,19 @@ class Form {
         return $this;
     }
 
+    private $buttonsContainerClass = 'flex justify-end space-x-3';
+
+    /**
+     * Set the class for the buttons container
+     * 
+     * @param string $class CSS class string
+     * @return Form
+     */
+    public function setButtonsContainerClass($class) {
+        $this->buttonsContainerClass = $class;
+        return $this;
+    }
+    
     /**
      * Render a submit button
      * 
@@ -385,27 +416,65 @@ class Form {
         }
         
         $field = $this->fields[$name];
+        $hasError = isset($this->errors[$name]);
         
-        $html = '<div class="mb-4">';
+        $html = '<div class="mb-6 relative group">';
         if (!empty($field['label'])) {
             $html .= sprintf(
-                '<label for="%s" class="block text-sm font-medium text-gray-700 mb-1">%s%s</label>',
+                '<label for="%s" class="block text-sm font-medium text-[#fafafa] mb-2">%s%s</label>',
                 htmlspecialchars($field['id']),
                 htmlspecialchars($field['label']),
-                $field['required'] ? '<span class="text-red-500">*</span>' : ''
+                $field['required'] ? '<span class="text-red-400 ml-1">*</span>' : ''
             );
         }
         
-        $html .= sprintf(
-            '<input type="%s" name="%s" id="%s" class="%s" %s value="%s" placeholder="%s">',
-            htmlspecialchars($field['type']),
-            htmlspecialchars($name),
-            htmlspecialchars($field['id']),
-            htmlspecialchars($field['class']),
-            $field['required'] ? 'required' : '',
-            htmlspecialchars($field['value'] ?? ''),
-            htmlspecialchars($field['placeholder'] ?? '')
-        );
+        $html .= '<div class="relative">';
+        
+        // Render different field types
+        if ($field['type'] === 'textarea') {
+            $html .= sprintf(
+                '<textarea name="%s" id="%s" rows="%d" class="w-full px-4 py-3 rounded-xl %s bg-[#27272a]/50 border %s text-[#fafafa] placeholder-[#71717a] focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-[#6366f1] transition-all duration-300 %s" %s placeholder="%s">%s</textarea>',
+                htmlspecialchars($name),
+                htmlspecialchars($field['id']),
+                intval($field['rows'] ?? 3),
+                $hasError ? 'border-red-500/50 focus:border-red-500' : 'border-[#3f3f46]',
+                $hasError ? 'ring-2 ring-red-500/10' : '',
+                htmlspecialchars($field['class']),
+                $field['required'] ? 'required' : '',
+                htmlspecialchars($field['placeholder'] ?? ''),
+                htmlspecialchars($field['value'] ?? '')
+            );
+        } else {
+            $html .= sprintf(
+                '<input type="%s" name="%s" id="%s" class="w-full px-4 py-3 rounded-xl %s bg-[#27272a]/50 border %s text-[#fafafa] placeholder-[#71717a] focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-[#6366f1] transition-all duration-300 %s" %s value="%s" placeholder="%s">',
+                htmlspecialchars($field['type']),
+                htmlspecialchars($name),
+                htmlspecialchars($field['id']),
+                $hasError ? 'border-red-500/50 focus:border-red-500' : 'border-[#3f3f46]',
+                $hasError ? 'ring-2 ring-red-500/10' : '',
+                htmlspecialchars($field['class']),
+                $field['required'] ? 'required' : '',
+                htmlspecialchars($field['value'] ?? ''),
+                htmlspecialchars($field['placeholder'] ?? '')
+            );
+        }
+
+        // Add gradient hover effect overlay
+        $html .= '<div class="absolute inset-0 rounded-xl bg-gradient-to-r from-indigo-500/5 via-purple-500/5 to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>';
+        
+        $html .= '</div>'; // Close relative div
+
+        if ($hasError) {
+            $html .= sprintf(
+                '<p class="mt-2 text-sm text-red-400 flex items-center">
+                    <svg class="w-4 h-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                    </svg>
+                    %s
+                </p>',
+                htmlspecialchars(is_array($this->errors[$name]) ? $this->errors[$name]['message'] : $this->errors[$name])
+            );
+        }
         
         $html .= '</div>';
         return $html;
@@ -419,15 +488,40 @@ class Form {
     public function render() {
         $html = $this->open();
         
+        // Render any form-level errors first
+        if (isset($this->errors['form'])) {
+            $error = $this->errors['form'];
+            $html .= $this->renderErrors();
+        }
+
+        // Render all fields
         foreach ($this->fields as $name => $_) {
             $html .= $this->renderField($name);
         }
         
+        // Render buttons container with submit and cancel
+        $html .= sprintf(
+            '<div class="%s">',
+            htmlspecialchars($this->buttonsContainerClass)
+        );
+
+        // Add cancel link - only show if we have a non-empty action
+        if (!empty($this->action) && $this->action !== '/dashboard') {
+            $cancelUrl = dirname($this->action);
+            $html .= sprintf(
+                '<a href="%s" class="bg-[#27272a]/50 text-[#a1a1aa] px-4 py-2 rounded-xl text-sm border border-[#3f3f46] hover:bg-[#3f3f46]/50 transition-colors duration-200">Cancel</a>',
+                htmlspecialchars($cancelUrl)
+            );
+        }
+
+        // Add submit button
         $html .= sprintf(
             '<button type="submit" class="%s">%s</button>',
             htmlspecialchars($this->submitClass),
             htmlspecialchars($this->submitText)
         );
+
+        $html .= '</div>'; // Close buttons container
         
         $html .= $this->close();
         return $html;
@@ -483,10 +577,18 @@ class Form {
         // First, render any form-level errors
         if (isset($this->errors['form'])) {
             $error = $this->errors['form'];
-            $output .= $this->view->renderPartial('partials/components/error-alert', [
-                'message' => is_array($error) ? $error['message'] : $error,
-                'type' => 'error'
-            ]);
+            $output .= '<div class="rounded-xl bg-red-500/10 border border-red-500/20 p-4 mb-6">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-red-400">' . (is_array($error) ? $error['message'] : $error) . '</p>
+                    </div>
+                </div>
+            </div>';
         }
         
         // Then, render field-specific errors

@@ -3,6 +3,7 @@ namespace LorPHP\Controllers;
 
 use LorPHP\Core\Controller;
 use LorPHP\Core\Database;
+use LorPHP\Core\FormBuilder;
 use LorPHP\Models\Client;
 
 class ClientController extends Controller {
@@ -29,27 +30,31 @@ class ClientController extends Controller {
     }
 
     public function create() {
+        $form = FormBuilder::createClientForm();
+        
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $client = new Client();
-            $client->organization_id = $this->user->organization_id; // UUID
-            $client->name = $_POST['name'] ?? '';
-            $client->email = $_POST['email'] ?? '';
-            $client->phone = $_POST['phone'] ?? '';
-            $client->notes = $_POST['notes'] ?? '';
-            
-            if ($client->save()) {
-                $this->withSuccess('Client created successfully');
-                return $this->redirectTo('/clients');
+            if ($form->validate()) {
+                $client = new Client();
+                $client->organization_id = $this->user->organization_id;
+                $client->name = $_POST['name'];
+                $client->email = $_POST['email'] ?? '';
+                $client->phone = $_POST['phone'] ?? '';
+                $client->notes = $_POST['notes'] ?? '';
+                
+                try {
+                    if ($client->save()) {
+                        $this->withSuccess('Client created successfully');
+                        return $this->redirectTo('/clients');
+                    }
+                } catch (\Exception $e) {
+                    $form->addError('form', 'Failed to create client. Please try again.');
+                }
             }
-            
-            return $this->view('clients/create', [
-                'title' => 'New Client',
-                'error' => 'Failed to create client'
-            ]);
         }
         
         return $this->view('clients/create', [
-            'title' => 'New Client'
+            'title' => 'New Client',
+            'form' => $form
         ]);
     }
 

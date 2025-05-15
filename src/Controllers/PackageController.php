@@ -3,6 +3,7 @@ namespace LorPHP\Controllers;
 
 use LorPHP\Core\Controller;
 use LorPHP\Core\Database;
+use LorPHP\Core\FormBuilder;
 use LorPHP\Models\Package;
 use LorPHP\Models\Client;
 
@@ -22,26 +23,28 @@ class PackageController extends Controller {
     }
 
     public function create() {
+        $form = FormBuilder::createPackageForm();
+
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $package = new Package();
-            $package->organization_id = $this->user->organization_id;
-            $package->name = $_POST['name'] ?? '';
-            $package->description = $_POST['description'] ?? '';
-            $package->price = $_POST['price'] ?? 0;
-            
-            if ($package->save()) {
-                $this->withSuccess('Package created successfully');
-                return $this->redirectTo('/packages');
+            if ($form->validate()) {
+                $package = new Package();
+                $package->organization_id = $this->user->organization_id;
+                $package->name = $_POST['name'];
+                $package->description = $_POST['description'] ?? '';
+                $package->price = floatval($_POST['price']);
+                
+                if ($package->save()) {
+                    $this->withSuccess('Package created successfully');
+                    return $this->redirectTo('/packages');
+                }
+                
+                $form->addError('form', 'Failed to create package');
             }
-            
-            return $this->view('packages/create', [
-                'title' => 'New Package',
-                'error' => 'Failed to create package'
-            ]);
         }
         
         return $this->view('packages/create', [
-            'title' => 'New Package'
+            'title' => 'New Package',
+            'form' => $form
         ]);
     }
 
