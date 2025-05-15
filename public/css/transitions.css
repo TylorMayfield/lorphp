@@ -1,10 +1,21 @@
+/* Base styles */
+html {
+    background-color: #0a0a0c;
+}
+
 /* Root transition (page fade) */
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
+}
+
 ::view-transition-old(root) {
-    animation: fade-out 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    z-index: 1;
 }
 
 ::view-transition-new(root) {
-    animation: fade-in 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    z-index: 2;
 }
 
 /* Auth container transition */

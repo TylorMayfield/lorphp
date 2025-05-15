@@ -71,12 +71,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 // Online navigation with View Transitions API
-                await document.startViewTransition(async () => {
+                const transition = document.startViewTransition(async () => {
                     const response = await fetch(link.href);
                     if (!response.ok) throw new Error('Navigation failed');
                     
                     const text = await response.text();
+                    // Pre-load any stylesheets in the new content
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = text;
+                    const styleLinks = tempDiv.querySelectorAll('link[rel="stylesheet"]');
+                    await Promise.all([...styleLinks].map(link => {
+                        if (!document.querySelector(`link[href="${link.href}"]`)) {
+                            return new Promise((resolve) => {
+                                const newLink = document.createElement('link');
+                                newLink.rel = 'stylesheet';
+                                newLink.href = link.href;
+                                newLink.onload = resolve;
+                                document.head.appendChild(newLink);
+                            });
+                        }
+                    }));
+                    
                     document.documentElement.innerHTML = text;
+                    document.documentElement.classList.add('render-ready');
                 });
             } catch (error) {
                 console.error('Navigation error:', error);

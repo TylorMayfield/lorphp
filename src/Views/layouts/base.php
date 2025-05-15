@@ -5,13 +5,57 @@ use LorPHP\Core\View;
 /** @var View $this */
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="bg-[#0a0a0c]">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="view-transition" content="same-origin">
     <meta name="theme-color" content="#18181b">
     <title><?php echo isset($title) ? htmlspecialchars($title) : 'LorPHP Framework'; ?></title>
+    
+    <!-- Critical rendering styles -->
+    <style>
+        /* Prevent FOUC */
+        html {
+            background-color: #0a0a0c;
+            visibility: hidden;
+        }
+        
+        /* Base styles to prevent flash */
+        body {
+            background-color: #0a0a0c;
+            color: #fafafa;
+            min-height: 100vh;
+        }
+        
+        /* Show content once DOM is ready */
+        .render-ready {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        /* Smooth transitions between pages */
+        ::view-transition-old(root),
+        ::view-transition-new(root) {
+            animation: none;
+            mix-blend-mode: normal;
+        }
+        
+        ::view-transition-group(root) {
+            z-index: 1;
+            background-color: #0a0a0c;
+        }
+        
+        main {
+            view-transition-name: main-content;
+            contain: paint;
+        }
+    </style>
+    
+    <script>
+        // Add render-ready class once DOM is loaded
+        document.documentElement.classList.add('render-ready');
+    </script>
     
     <!-- PWA Support -->
     <link rel="manifest" href="/manifest.json">
@@ -100,6 +144,8 @@ use LorPHP\Core\View;
             'flash_success' => $flash_success ?? null
         ]); ?>
     <?php endif; ?>
+    
+    <!-- Page transition styles moved to critical styles block above -->
 </head>
 
 <body class="bg-[#0a0a0c] text-[#fafafa] min-h-screen flex flex-col">
