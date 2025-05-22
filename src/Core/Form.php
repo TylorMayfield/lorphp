@@ -464,22 +464,45 @@ class Form {
         
         $html .= '</div>'; // Close relative div
 
-        if ($hasError) {
-            $html .= sprintf(
-                '<p class="mt-2 text-sm text-red-400 flex items-center">
-                    <svg class="w-4 h-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
-                    </svg>
-                    %s
-                </p>',
-                htmlspecialchars(is_array($this->errors[$name]) ? $this->errors[$name]['message'] : $this->errors[$name])
-            );
-        }
-        
-        $html .= '</div>';
+        $html .= '</div>'; // Close form group div
         return $html;
     }
     
+    /**
+     * Render form errors in a consistent way
+     * 
+     * @return string HTML for form errors
+     */
+    public function renderErrors() {
+        if (empty($this->errors)) {
+            return '';
+        }
+        
+        $output = '';
+        
+        // Get all errors and combine them into a single message
+        $errorMessages = [];
+        foreach ($this->errors as $field => $error) {
+            $message = is_array($error) ? $error['message'] : $error;
+            $errorMessages[] = $message;
+        }
+
+        $output .= '<div class="rounded-xl bg-red-500/10 border border-red-500/20 p-4 mb-6">
+            <div class="flex items-start">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-red-400">' . htmlspecialchars(implode(", ", $errorMessages)) . '</p>
+                </div>
+            </div>
+        </div>';
+        
+        return $output;
+    }
+
     /**
      * Render the complete form
      * 
@@ -488,9 +511,8 @@ class Form {
     public function render() {
         $html = $this->open();
         
-        // Render any form-level errors first
-        if (isset($this->errors['form'])) {
-            $error = $this->errors['form'];
+        // Render all errors first
+        if (!empty($this->errors)) {
             $html .= $this->renderErrors();
         }
 
@@ -499,7 +521,7 @@ class Form {
             $html .= $this->renderField($name);
         }
         
-        // Render buttons container with submit and cancel
+        // Render buttons container
         $html .= sprintf(
             '<div class="%s">',
             htmlspecialchars($this->buttonsContainerClass)
@@ -560,55 +582,5 @@ class Form {
             'context' => $context
         ];
         return $this;
-    }
-    
-    /**
-     * Render form errors in a consistent way
-     * 
-     * @return string HTML for form errors
-     */
-    public function renderErrors() {
-        if (empty($this->errors)) {
-            return '';
-        }
-        
-        $output = '';
-        
-        // First, render any form-level errors
-        if (isset($this->errors['form'])) {
-            $error = $this->errors['form'];
-            $output .= '<div class="rounded-xl bg-red-500/10 border border-red-500/20 p-4 mb-6">
-                <div class="flex items-start">
-                    <div class="flex-shrink-0">
-                        <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
-                        </svg>
-                    </div>
-                    <div class="ml-3">
-                        <p class="text-sm text-red-400">' . (is_array($error) ? $error['message'] : $error) . '</p>
-                    </div>
-                </div>
-            </div>';
-        }
-        
-        // Then, render field-specific errors
-        $fieldErrors = array_filter($this->errors, function($key) {
-            return $key !== 'form';
-        }, ARRAY_FILTER_USE_KEY);
-        
-        if (!empty($fieldErrors)) {
-            $details = array_map(function($error, $field) {
-                $message = is_array($error) ? $error['message'] : $error;
-                return "$message";
-            }, $fieldErrors, array_keys($fieldErrors));
-            
-            $output .= $this->view->renderPartial('partials/components/error-alert', [
-                'message' => 'Please correct the following errors:',
-                'type' => 'error',
-                'details' => $details
-            ]);
-        }
-        
-        return $output;
     }
 }
