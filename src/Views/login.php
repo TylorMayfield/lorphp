@@ -34,6 +34,7 @@ $this->setLayout('base');
             <div class="mt-8 relative">
                 <?php 
                 $formErrors = $form->getErrors();
+                // Only display one error at a time, prioritizing form-level errors
                 if (!empty($formErrors)): 
                     $error = $formErrors['form'] ?? reset($formErrors);
                 ?>
@@ -53,6 +54,7 @@ $this->setLayout('base');
                 
                 <?php echo $form->render(); ?>
             </div>
+
             <div class="text-center text-sm text-[#71717a] mt-6">
                 By signing in, you agree to our
                 <a href="/terms" class="font-medium text-indigo-400 hover:text-indigo-300 transition-colors">Terms of Service</a>

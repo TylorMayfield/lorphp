@@ -60,11 +60,13 @@ class LoginController extends Controller
                         return $this->redirectTo($this->config['routes']['login_redirect'] ?? '/dashboard');
                     }
                     
-                    $form->addError('form', 'Invalid email or password.');
+                    // Use form error instead of general error message
+                    $errorMessage = $this->config['messages']['login']['invalid_credentials'] ?? 'Invalid email or password.';
+                    $form->addError('form', $errorMessage);
                     
                 } catch (\Exception $e) {
-                    $form->addError('form', 'An error occurred during login. Please try again.');
                     error_log("Login error: " . $e->getMessage());
+                    $form->addError('form', 'An error occurred during login. Please try again.');
                 }
             }
         }

@@ -10,13 +10,14 @@
 namespace LorPHP\Models;
 
 use LorPHP\Core\Model;
-use LorPHP\Interfaces\UserInterface;
-use LorPHP\Models\Client;
+use LorPHP\Interfaces\ClientInterface;
 use LorPHP\Models\Organization;
+use LorPHP\Models\Contact;
+use LorPHP\Models\Package;
 
 /**
- * Class User
- * Represents the User entity.
+ * Class Client
+ * Represents the Client entity.
  *
  * @property string $id
  * @property string $createdAt
@@ -25,13 +26,12 @@ use LorPHP\Models\Organization;
  * @property string $modifiedBy
  * @property string $name
  * @property string $email
- * @property string $password
- * @property string $role
+ * @property string $organizationId
  */
-class User extends Model implements UserInterface
+class Client extends Model implements ClientInterface
 {
-    protected static string $tableName = 'users';
-    protected static $fillable = ['id', 'createdAt', 'updatedAt', 'isActive', 'modifiedBy', 'name', 'email', 'password', 'role', 'clients', 'organizations'];
+    protected static string $tableName = 'clients';
+    protected static $fillable = ['id', 'createdAt', 'updatedAt', 'isActive', 'modifiedBy', 'name', 'email', 'organizationId', 'organization', 'contacts', 'packages'];
                 
                 
     /**
@@ -54,41 +54,60 @@ class User extends Model implements UserInterface
     }
                 
     /**
-     * Get related clients
-     * @return Client[]
+     * Get related organization
+     * @return Organization[]
      */
-    public function clients()
+    public function organization()
     {
-        return $this->manyToMany(Client::class);
+        return $this->belongsTo(Organization::class);
     }
                 
-    public function getClients()
+    public function getOrganization()
     {
-        return $this->clients();
+        return $this->organization();
     }
 
-    public function setClients($clients): void
+    public function setOrganization($organization): void
     {
-        $this->clients = $clients;
+        $this->organization = $organization;
     }
                 
     /**
-     * Get related organizations
-     * @return Organization[]
+     * Get related contacts
+     * @return Contact[]
      */
-    public function organizations()
+    public function contacts()
     {
-        return $this->manyToMany(Organization::class);
+        return $this->hasMany(Contact::class);
     }
                 
-    public function getOrganizations()
+    public function getContacts()
     {
-        return $this->organizations();
+        return $this->contacts();
     }
 
-    public function setOrganizations($organizations): void
+    public function setContacts($contacts): void
     {
-        $this->organizations = $organizations;
+        $this->contacts = $contacts;
+    }
+                
+    /**
+     * Get related packages
+     * @return Package[]
+     */
+    public function packages()
+    {
+        return $this->manyToMany(Package::class);
+    }
+                
+    public function getPackages()
+    {
+        return $this->packages();
+    }
+
+    public function setPackages($packages): void
+    {
+        $this->packages = $packages;
     }
                 
     public function getId()
@@ -161,22 +180,12 @@ class User extends Model implements UserInterface
         $this->email = $email;
     }
                 
-    public function getPassword()
+    public function getOrganizationId()
     {
-        return $this->password;
+        return $this->organizationId;
     }
 
-    public function setPassword($password): void
+    public function setOrganizationId($organizationId): void
     {
-        $this->password = $password;
-    }
-                
-    public function getRole()
-    {
-        return $this->role;
-    }
-
-    public function setRole($role): void
-    {
-        $this->role = $role;
+        $this->organizationId = $organizationId;
     }}

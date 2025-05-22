@@ -49,6 +49,53 @@ class ModelGenerator {
         return self::$sqliteTypeMap[strtolower($type)] ?? 'TEXT';
     }
 
+    private static function generateFinderMethods(array $fields): string {
+        $methods = [];
+        
+        foreach ($fields as $field => $details) {
+            // Skip relationship fields
+            if (isset($details['relationship'])) {
+                continue;
+            }
+            
+            // Check if field has unique attribute
+            $hasUniqueAttribute = false;
+            if (isset($details['attributes']) && is_array($details['attributes'])) {
+                $hasUniqueAttribute = in_array('@unique', $details['attributes']);
+            }
+            
+            if ($hasUniqueAttribute) {
+                $type = self::getPHPType($details['type'] ?? 'string');
+                $methodName = ucfirst($field);
+                $nullableType = isset($details['nullable']) && $details['nullable'] ? "?$type" : $type;
+                
+                $methods[] = <<<PHP
+                
+    /**
+     * Find a record by its {$field}
+     * @param {$type} \${$field} The {$field} to search for
+     * @return static|null The record if found, null otherwise
+     */
+    public static function findBy{$methodName}({$nullableType} \${$field}): ?static
+    {
+        \$db = \LorPHP\Core\Database::getInstance();
+        \$data = \$db->findOne(static::\$tableName, ['{$field}' => \${$field}]);
+        
+        if (\$data) {
+            \$model = new static();
+            \$model->fill(\$data);
+            return \$model;
+        }
+        
+        return null;
+    }
+PHP;
+            }
+        }
+
+        return implode("\n", $methods);
+    }
+
     private static function generateGettersAndSetters(array $fields): string {
         $methods = [];
         
@@ -93,34 +140,96 @@ PHP;
 PHP;
     }
 
+    private static function generateRelationshipMethods(array $fields): string {
+        $methods = [];
+        
+        foreach ($fields as $field => $details) {
+            if (!isset($details['relationship'])) {
+                continue;
+            }
+
+            $type = $details['type'];
+            $relationship = $details['relationship'];
+            $methodName = ucfirst($field);
+            
+            // Create the relationship method that will be called by the magic getter
+            $relationshipType = match($relationship) {
+                'many-to-many' => 'manyToMany',
+                'one-to-many' => 'hasMany',
+                'many-to-one' => 'belongsTo',
+                'one-to-one' => 'hasOne',
+                default => 'hasOne'
+            };
+
+            // Add magic property getter
+            $methods[] = <<<PHP
+                
+    /**
+     * Get related {$field}
+     * @return {$type}[]
+     */
+    public function {$field}()
+    {
+        return \$this->{$relationshipType}({$type}::class);
+    }
+PHP;
+
+            // Add normal getter/setter methods
+            $methods[] = <<<PHP
+                
+    public function get{$methodName}()
+    {
+        return \$this->{$field}();
+    }
+
+    public function set{$methodName}(\${$field}): void
+    {
+        \$this->{$field} = \${$field};
+    }
+PHP;
+        }
+
+        return implode("\n", $methods);
+    }
+
     public static function generateModelContent(string $entityName, array $fields, string $tableName, array $fillableFields): string {
         $header = self::generateFileHeader();
         $fieldsString = self::generateFieldsDocBlock($fields);
         $relationships = self::generateRelationshipMethods($fields);
-        $relationshipProperties = self::generateRelationshipProperties($fields);
-        $relationshipImports = self::generateRelationshipImports($fields);
+        $finderMethods = self::generateFinderMethods($fields);
         $gettersAndSetters = self::generateGettersAndSetters($fields);
         $fillableString = '[' . implode(', ', array_map(fn($f) => "'{$f}'", $fillableFields)) . ']';
+        
+        // Add imports for related models
+        $imports = ["use LorPHP\\Core\\Model;", "use LorPHP\\Interfaces\\{$entityName}Interface;"];
+        foreach ($fields as $field => $details) {
+            if (isset($details['type']) && isset($details['relationship'])) {
+                $imports[] = "use LorPHP\\Models\\{$details['type']};";
+            }
+        }
+        $imports = array_unique($imports);
+        $importsString = implode("\n", $imports);
 
         return <<<PHP
 <?php
 
 {$header}namespace LorPHP\\Models;
 
-use LorPHP\\Core\\Model;
-use LorPHP\\Interfaces\\{$entityName}Interface;
-{$relationshipImports}
+{$importsString}
 
 /**
  * Class {$entityName}
  * Represents the {$entityName} entity.
  *
-{$fieldsString}{$relationshipProperties} */
+{$fieldsString} */
 class {$entityName} extends Model implements {$entityName}Interface
 {
     protected static string \$tableName = '{$tableName}';
     protected static \$fillable = {$fillableString};
-{$relationships}{$gettersAndSetters}}
+                
+{$finderMethods}
+{$relationships}
+{$gettersAndSetters}}
 
 PHP;
     }
@@ -212,38 +321,6 @@ PHP;
             $columnsPhp .= $columnDef . ";\n";
         }
         return $columnsPhp;
-    }
-
-    private static function generateRelationshipMethods(array $fields): string {
-        $methods = '';
-        foreach ($fields as $field => $details) {
-            if (isset($details['relationship'])) {
-                $relationType = $details['relationship']['type'] ?? '';
-                $relatedModel = $details['relationship']['model'] ?? '';
-                $foreignKey = $details['relationship']['foreignKey'] ?? '';
-
-                if ($relationType && $relatedModel) {
-                    switch (strtolower($relationType)) {
-                        case 'belongsto':
-                            $methods .= "\n    public function " . lcfirst($field) . "()\n    {";
-                            $methods .= "\n        return \$this->belongsTo(" . $relatedModel . "::class, '" . $foreignKey . "');";
-                            $methods .= "\n    }\n";
-                            break;
-                        case 'hasmany':
-                            $methods .= "\n    public function " . lcfirst($field) . "()\n    {";
-                            $methods .= "\n        return \$this->hasMany(" . $relatedModel . "::class, '" . $foreignKey . "');";
-                            $methods .= "\n    }\n";
-                            break;
-                        case 'hasone':
-                            $methods .= "\n    public function " . lcfirst($field) . "()\n    {";
-                            $methods .= "\n        return \$this->hasOne(" . $relatedModel . "::class, '" . $foreignKey . "');";
-                            $methods .= "\n    }\n";
-                            break;
-                    }
-                }
-            }
-        }
-        return $methods;
     }
 
     private static function generateRelationshipProperties(array $fields): string {
