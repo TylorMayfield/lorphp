@@ -8,12 +8,15 @@ use LorPHP\Helpers\ModelGenerator;
 // Default values
 $entityName = null;
 $schemaFilePath = null;
+$force = false;
 
 // Parse command line arguments
 for ($i = 1; $i < $argc; $i++) {
     if ($argv[$i] === '--schema' && isset($argv[$i+1])) {
         $schemaFilePath = $argv[$i+1];
         $i++; // Skip the next argument as it's the schema path
+    } elseif ($argv[$i] === '--force') {
+        $force = true;
     } elseif (!$entityName && $argv[$i][0] !== '-') {
         // First non-option argument is the entity name
         $entityName = $argv[$i];
@@ -21,7 +24,7 @@ for ($i = 1; $i < $argc; $i++) {
 }
 
 if (!$entityName) {
-    echo "Usage: php generate-model.php <EntityName> --schema <path_to_schema.json>\n";
+    echo "Usage: php generate-model.php <EntityName> --schema <path_to_schema.json> [--force]\n";
     exit(1);
 }
 
@@ -85,11 +88,11 @@ try {
     );
 
     // Create or update model file
-    if (!file_exists($modelPath)) {
+    if (!file_exists($modelPath) || $force) {
         if (file_put_contents($modelPath, $modelContent)) {
-            echo "Created model: {$modelPath}\n";
+            echo "Created/Updated model: {$modelPath}\n";
 
-            // Generate migration
+            // Generate migration only if it doesn't exist
             $timestamp = date('Ymd_His');
             $baseFileName = 'create_' . strtolower($entityName) . '_table';
             $migrationFileName = $timestamp . '_' . $baseFileName;

@@ -7,7 +7,7 @@
 // Use the base layout
 $this->setLayout('base');
 ?>
-<div class="min-h-screen flex items-center justify-center py-8">
+<div class="min-h-screen flex items-center justify-center pt-24 pb-8">
     <div class="max-w-md w-full space-y-6 p-8 bg-[#18181b]/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-[#27272a] relative overflow-hidden">
         <!-- Gradient background effect -->
         <div class="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-blue-500/10 opacity-50"></div>
