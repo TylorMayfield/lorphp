@@ -1,0 +1,144 @@
+<?php
+
+namespace LorPHP\Interfaces;
+
+/**
+ * Interface ContactInterface
+ * Represents a contact person for a client
+ *
+ * @property String $id Unique identifier for the record
+ * @property DateTime $createdAt Timestamp of when the record was created
+ * @property DateTime $updatedAt Timestamp of when the record was last updated
+ * @property Boolean $isActive Whether the record is active
+ * @property String|null $modifiedBy Identifier of the user who last modified the record
+ * @property String $name Name
+ * @property String $email Email
+ * @property String $clientId ClientId
+ * @property Client $client Client
+ */
+interface ContactInterface
+{
+    /**
+     * Get the id
+     * @return String
+     */
+    public function getId();
+
+    /**
+     * Set the id
+     * @param String $id
+     * @return void
+     */
+    public function setId($id): void;
+
+    /**
+     * Get the createdAt
+     * @return DateTime
+     */
+    public function getCreatedAt();
+
+    /**
+     * Set the createdAt
+     * @param DateTime $createdAt
+     * @return void
+     */
+    public function setCreatedAt($createdAt): void;
+
+    /**
+     * Get the updatedAt
+     * @return DateTime
+     */
+    public function getUpdatedAt();
+
+    /**
+     * Set the updatedAt
+     * @param DateTime $updatedAt
+     * @return void
+     */
+    public function setUpdatedAt($updatedAt): void;
+
+    /**
+     * Get the isActive
+     * @return Boolean
+     */
+    public function getIsActive();
+
+    /**
+     * Set the isActive
+     * @param Boolean $isActive
+     * @return void
+     */
+    public function setIsActive($isActive): void;
+
+    /**
+     * Get the modifiedBy
+     * @return String|null
+     */
+    public function getModifiedBy();
+
+    /**
+     * Set the modifiedBy
+     * @param String|null $modifiedBy
+     * @return void
+     */
+    public function setModifiedBy($modifiedBy): void;
+
+    /**
+     * Get the name
+     * @return String
+     */
+    public function getName();
+
+    /**
+     * Set the name
+     * @param String $name
+     * @return void
+     */
+    public function setName($name): void;
+
+    /**
+     * Get the email
+     * @return String
+     */
+    public function getEmail();
+
+    /**
+     * Set the email
+     * @param String $email
+     * @return void
+     */
+    public function setEmail($email): void;
+
+    /**
+     * Get the clientId
+     * @return String
+     */
+    public function getClientId();
+
+    /**
+     * Set the clientId
+     * @param String $clientId
+     * @return void
+     */
+    public function setClientId($clientId): void;
+
+    /**
+     * Get the client
+     * @return Client
+     */
+    public function getClient();
+
+    /**
+     * Set the client
+     * @param Client $client
+     * @return void
+     */
+    public function setClient($client): void;
+
+    /**
+     * Get related client
+     * @return Client
+     */
+    public function client();
+
+}

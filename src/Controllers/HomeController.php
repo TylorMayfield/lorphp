@@ -6,6 +6,6 @@ use LorPHP\Core\View;
 class HomeController {
     public function index() {
         $view = new View();
-        echo $view->render('landing');
+        return $view->render('landing');
     }
 }

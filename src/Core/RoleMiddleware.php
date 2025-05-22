@@ -2,8 +2,31 @@
 namespace LorPHP\Core;
 
 use LorPHP\Models\Permission;
+use LorPHP\Models\User;
 
 class RoleMiddleware {
+    /**
+     * Check if user is authenticated
+     * @return bool
+     */
+    public static function isAuthenticated(): bool {
+        return !is_null(Application::getInstance()->getState('user'));
+    }
+
+    /**
+     * Check if user has specified role
+     * @param string $role
+     * @return bool
+     */
+    public static function hasRole(string $role): bool {
+        $user = Application::getInstance()->getState('user');
+        if (!$user || !isset($user->role)) {
+            return false;
+        }
+        
+        return strtolower($user->role) === strtolower($role);
+    }
+
     /**
      * Check if user has required permission
      * @param string $permission

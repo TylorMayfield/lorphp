@@ -1,6 +1,130 @@
 #!/usr/bin/env php
 <?php
 
+// DB reset command: drops and recreates the SQLite database, then runs all migrations
+if ($argc > 1 && $argv[1] === 'db:reset') {
+    $dbFile = __DIR__ . '/../storage/database.sqlite';
+    if (file_exists($dbFile)) {
+        unlink($dbFile);
+        echo "Database file deleted.\n";
+    }
+    // Recreate the SQLite file (it will be created by migrations)
+    touch($dbFile);
+    echo "Database file created.\n";
+    // Run all migrations
+    passthru("php " . __FILE__ . " migrate:run");
+    exit(0);
+}
+
+// Entity generator command (model, interface, controller)
+// (Now reads from database/schema.json)
+if ($argc > 1 && $argv[1] === 'generate') {
+    $schemaFile = __DIR__ . '/../database/schema.json'; // Changed to .json
+    if (!file_exists($schemaFile)) {
+        echo "database/schema.json not found!\n";
+        exit(1);
+    }
+
+    // 1. Generate migrations based on schema diff
+    $migrationScript = __DIR__ . '/generate-migrations.php';
+    if (file_exists($migrationScript)) {
+        echo "Generating migrations...\n";
+        // Assuming generate-migrations.php can also handle JSON or will be updated.
+        // For now, we'll pass the JSON file path. It might need adjustments.
+        passthru("php $migrationScript --schema $schemaFile"); 
+    }
+
+    // 2. Generate all interfaces
+    $interfaceScript = __DIR__ . '/generate-interfaces.php';
+    if (file_exists($interfaceScript)) {
+        echo "Generating interfaces...\n";
+        // Assuming generate-interfaces.php can also handle JSON or will be updated.
+        passthru("php $interfaceScript --schema $schemaFile");
+    }
+
+    // 3. Parse schema to get entity names
+    echo "Loading entities from schema...\n";
+    
+    $schemaContent = file_get_contents($schemaFile);
+    if ($schemaContent === false) {
+        echo "Error: Could not read schema file: $schemaFile\n";
+        exit(1);
+    }
+
+    $schemaData = json_decode($schemaContent, true);
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        echo "Error parsing JSON from $schemaFile: " . json_last_error_msg() . "\n";
+        exit(1);
+    }
+
+    $entityNames = [];
+    if (isset($schemaData['entities']) && is_array($schemaData['entities'])) {
+        $entityNames = array_keys($schemaData['entities']);
+    }
+    
+    if (empty($entityNames)) {
+        echo "No entities found in $schemaFile. Skipping model and controller generation.\n";
+    } else {
+        echo "Found entities: " . implode(', ', $entityNames) . "\n";
+
+        $modelScript = __DIR__ . '/generate-model.php';
+        $controllerScript = __DIR__ . '/generate-controller.php';
+
+        // 4. For each entity, generate model and controller
+        foreach ($entityNames as $entityName) {
+            if (!is_string($entityName) || empty($entityName)) {
+                echo "Warning: Invalid entity name found in schema. Skipping: " . print_r($entityName, true) . "\n";
+                continue;
+            }
+            echo "Processing entity: $entityName\n";
+
+            // a. Generate model for the entity
+            // generate-model.php will need to be updated to read entity details from the JSON schema
+            if (file_exists($modelScript)) {
+                echo "  Generating model for $entityName...\n";
+                passthru("php $modelScript \"{$entityName}\" --schema \"$schemaFile\"");
+            }
+
+            // b. Generate controller for the entity
+            // generate-controller.php might also need schema context if it derives from model/interface details
+            // that are now more structured in JSON.
+            if (file_exists($controllerScript)) {
+                echo "  Generating controller for $entityName...\n";
+                passthru("php $controllerScript \"{$entityName}\" --schema $schemaFile"); // Added --schema for consistency, controller generator might need it
+            }
+        }
+    }
+
+    echo "Generation process completed.\n";
+    exit(0);
+}
+
+require_once __DIR__ . '/helpers/routes.php';
+// Route management commands
+if ($argc > 2 && $argv[1] === 'route:add') {
+    // ./lor route:add METHOD PATH HANDLER
+    $method = strtoupper($argv[2]);
+    $path = $argv[3] ?? null;
+    $handler = $argv[4] ?? null;
+    if (!$path || !$handler) {
+        echo "Usage: ./lor route:add METHOD PATH HANDLER\n";
+        exit(1);
+    }
+    addRoute($method, $path, $handler);
+    exit(0);
+}
+
+if ($argc > 1 && $argv[1] === 'route:list') {
+    listRoutes();
+    exit(0);
+}
+
+if ($argc > 2 && $argv[1] === 'route:remove') {
+    $path = $argv[2];
+    removeRoute($path);
+    exit(0);
+}
+
 if (php_sapi_name() !== 'cli') {
     die('This script can only be run from the command line');
 }
@@ -43,92 +167,52 @@ ini_set('display_errors', '1');
 function showHelp() {
     echo "\nLorPHP Command Line Tool\n";
     echo "========================\n\n";
+    echo "Usage:\n";
+    echo "  ./lor <command> [options]\n\n";
     echo "Available commands:\n";
-    echo "  migrate:create <n>  Create a new migration\n";
-    echo "  migrate:run           Run pending migrations\n";
-    echo "  migrate:rollback      Rollback last migration batch\n";
-    echo "  help                  Show this help message\n\n";
+    echo "  migrate:create <name>      Create a new migration file (e.g., add_users_table)\n";
+    echo "  migrate:run                Run all pending migrations\n";
+    echo "  migrate:rollback           Rollback the last batch of migrations\n";
+    echo "  orm:generate-interfaces    Generate model interfaces and PHPDoc\n";
+    echo "  generate                   Generate models, interfaces, and controllers from database/schema.lorphp\n";
+    echo "  db:reset                  Drop and recreate the SQLite database, then run all migrations\n";
+    echo "  make:controller <Entity>   Generate a controller from its interface\n";
+    echo "  route:add METHOD PATH HANDLER   Add a route (e.g., GET /clients ClientController@index)\n";
+    echo "  route:list                 List all routes\n";
+    echo "  route:remove PATH          Remove a route by path\n";
+    echo "  help                       Show this help message\n\n";
     echo "Examples:\n";
     echo "  ./lor migrate:create add_users_table\n";
     echo "  ./lor migrate:run\n";
-    echo "  ./lor migrate:rollback\n\n";
+    echo "  ./lor migrate:rollback\n";
+    echo "  ./lor orm:generate-interfaces\n";
+    echo "  ./lor make:entity Client name:string email:string\n";
+    echo "  ./lor make:model Client name:string email:string\n";
+    echo "  ./lor db:reset\n";
+    echo "  ./lor make:controller Client\n";
+    echo "  ./lor route:add GET /clients ClientController@index\n";
+    echo "  ./lor route:list\n";
+    echo "  ./lor route:remove /clients\n\n";
+    echo "Run './lor help' to see this message.\n";
+}
+// Controller generator command
+if ($argc > 2 && $argv[1] === 'make:controller') {
+    $entity = $argv[2];
+    $script = __DIR__ . '/generate-controller.php';
+    if (!file_exists($script)) {
+        echo "bin/generate-controller.php not found!\n";
+        exit(1);
+    }
+    passthru("php $script $entity");
+    exit(0);
 }
 
-function getMigrationFiles() {
-    $files = glob(__DIR__ . '/../database/migrations/*.php');
-    sort($files); // Ensure migrations run in order
-    return $files;
-}
 
-function getPendingMigrations() {
-    $db = \LorPHP\Core\Database::getInstance();
-    $executed = $db->query("SELECT migration FROM migrations")->fetchAll(\PDO::FETCH_COLUMN);
-    $pending = [];
-    
-    foreach (getMigrationFiles() as $file) {
-        $name = basename($file);
-        if (!in_array($name, $executed)) {
-            $pending[] = $file;
-        }
-    }
-    
-    return $pending;
-}
 
-function runMigration($file) {
-    require_once $file;
-    // Convert snake_case filename to CamelCase classname (e.g., 001_create_users_table -> CreateUsersTable)
-    $name = preg_replace('/^\d+_/', '', pathinfo($file, PATHINFO_FILENAME));
-    $className = '\\LorPHP\\Database\\Migrations\\' . str_replace(' ', '', ucwords(str_replace('_', ' ', $name)));
-    
-    if (!class_exists($className)) {
-        echo "Error: Class {$className} not found in file {$file}\n";
-        return false;
-    }
-    
-    $migration = new $className();
-    
-    try {
-        $batch = $migration->getLastBatch() + 1;
-        $migration->up();
-        $migration->log(basename($file), $batch);
-        echo "Migrated: " . basename($file) . "\n";
-        return true;
-    } catch (\Exception $e) {
-        echo "Error migrating " . basename($file) . ": " . $e->getMessage() . "\n";
-        // Attempt to rollback if up() failed
-        try {
-            $migration->down();
-            echo "Rolled back failed migration: " . basename($file) . "\n";
-        } catch (\Exception $downEx) {
-            echo "Error rolling back failed migration " . basename($file) . ": " . $downEx->getMessage() . "\n";
-        }
-        return false;
-    }
-}
+require_once __DIR__ . '/helpers/migrations.php';
+require_once __DIR__ . '/helpers/interfaces.php';
+require_once __DIR__ . '/helpers/migrate_commands.php';
 
-function rollbackMigration($file) {
-    require_once $file;
-    $name = preg_replace('/^\d+_/', '', pathinfo($file, PATHINFO_FILENAME));
-    $className = '\\LorPHP\\Database\\Migrations\\' . str_replace(' ', '', ucwords(str_replace('_', ' ', $name)));
-
-    if (!class_exists($className)) {
-        echo "Error: Class {$className} not found in file {$file}\n";
-        return false;
-    }
-
-    $migration = new $className();
-    
-    try {
-        $migration->down();
-        $migration->remove(basename($file));
-        echo "Rolled back: " . basename($file) . "\n";
-        return true;
-    } catch (\Exception $e) {
-        echo "Error rolling back " . basename($file) . ": " . $e->getMessage() . "\n";
-        return false;
-    }
-}
 
 // Get the command from arguments
 if ($argc < 2) {
@@ -138,96 +222,26 @@ if ($argc < 2) {
 
 $input = $argv[1];
 
-// Parse command
+// ORM Interface Generation
+if ($input === 'orm:generate-interfaces') {
+    generateOrmInterfaces();
+    exit(0);
+}
+
+// Help command
 if ($input === 'help') {
     showHelp();
     exit(0);
 }
 
 $parts = explode(':', $input);
-if (count($parts) !== 2 || $parts[0] !== 'migrate') {
+if (count($parts) === 2 && $parts[0] === 'migrate') {
+    $command = $parts[1];
+    $name = isset($argv[2]) ? $argv[2] : null;
+    handleMigrateCommand($command, $name);
+    exit(0);
+} else if (strpos($input, 'migrate') === 0) {
     echo "Error: Unknown command '{$input}'\n\n";
     showHelp();
     exit(1);
-}
-
-$command = $parts[1];
-$name = isset($argv[2]) ? $argv[2] : null;
-
-// Process commands
-switch ($command) {
-    case 'run':
-        echo "Running migrations...\n";
-        $pending = getPendingMigrations();
-        if (empty($pending)) {
-            echo "Nothing to migrate.\n";
-            exit(0);
-        }
-        
-        foreach ($pending as $file) {
-            runMigration($file);
-        }
-        break;
-        
-    case 'rollback':
-        echo "Rolling back last batch...\n";
-        $db = \LorPHP\Core\Database::getInstance();
-        $lastBatch = $db->query("SELECT MAX(batch) as batch FROM migrations")->fetch(\PDO::FETCH_ASSOC)['batch'];
-        
-        if (!$lastBatch) {
-            echo "Nothing to rollback.\n";
-            exit(0);
-        }
-        
-        $migrations = $db->query(
-            "SELECT migration FROM migrations WHERE batch = ? ORDER BY id DESC",
-            [$lastBatch]
-        )->fetchAll(\PDO::FETCH_COLUMN);
-        
-        foreach ($migrations as $migration) {
-            $file = __DIR__ . '/../database/migrations/' . $migration;
-            if (file_exists($file)) {
-                rollbackMigration($file);
-            }
-        }
-        break;
-        
-    case 'create':
-        if (!$name) {
-            echo "Error: Migration name required\n";
-            echo "Usage: ./lor migrate:create <name>\n";
-            exit(1);
-        }
-        
-        $template = <<<PHP
-<?php
-namespace LorPHP\Database\Migrations;
-
-use LorPHP\Core\Migration;
-use LorPHP\Core\Schema;
-
-class %s extends Migration {
-    public function up() {
-        // Your migration code here
-    }
-    
-    public function down() {
-        // Rollback code here
-    }
-}
-PHP;
-
-        $className = str_replace(' ', '_', ucwords(str_replace('_', ' ', $name)));
-        $migrations = glob(__DIR__ . '/../database/migrations/*.php');
-        $nextNum = sprintf('%03d', count($migrations) + 1);
-        $filename = __DIR__ . "/../database/migrations/{$nextNum}_{$name}.php";
-        
-        file_put_contents($filename, sprintf($template, $className));
-        echo "Created migration: " . basename($filename) . "\n";
-        break;
-        
-    default:
-        echo "Error: Unknown command '{$command}'\n";
-        showHelp();
-        exit(1);
 }

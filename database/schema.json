@@ -1,0 +1,78 @@
+{
+  "bakedInFieldsDefinition": {
+    "id":        { "type": "String", "attributes": ["@id", "@default(uuid())"], "description": "Unique identifier for the record" },
+    "createdAt": { "type": "DateTime", "attributes": ["@default(now())"], "description": "Timestamp of when the record was created" },
+    "updatedAt": { "type": "DateTime", "attributes": ["@updatedAt"], "description": "Timestamp of when the record was last updated" },
+    "isActive":  { "type": "Boolean", "attributes": ["@default(true)"], "description": "Whether the record is active" },
+    "modifiedBy":{ "type": "String", "nullable": true, "description": "Identifier of the user who last modified the record" }
+  },
+  "entities": {
+    "User": {
+      "description": "Represents a user in the system",
+      "fields": {
+        "name":      { "type": "String" },
+        "email":     { "type": "String", "attributes": ["@unique"] },
+        "password":  { "type": "String" },
+        "role":      { "type": "String", "nullable": true },
+        "clients":   { "type": "Client", "relationship": "many-to-many", "description": "Clients associated with this user" },
+        "organizations": { "type": "Organization", "relationship": "many-to-many", "description": "Organizations this user belongs to" }
+      },
+      "useBakedInFields": true
+    },
+    "Client": {
+      "description": "Represents a client",
+      "fields": {
+        "name":      { "type": "String" },
+        "email":     { "type": "String", "attributes": ["@unique"] },
+        "organizationId": { "type": "String", "isForeignKey": true },
+        "organization": {
+          "type": "Organization",
+          "relationship": "many-to-one",
+          "relationDetails": { "fields": ["organizationId"], "references": ["id"] }
+        },
+        "contacts":  { "type": "Contact", "relationship": "one-to-many", "description": "Contacts for this client" },
+        "packages":  { "type": "Package", "relationship": "many-to-many", "description": "Packages associated with this client" }
+      },
+      "useBakedInFields": true
+    },
+    "Organization": {
+      "description": "Represents an organization",
+      "fields": {
+        "name":      { "type": "String" },
+        "users":     { "type": "User", "relationship": "one-to-many", "description": "Users belonging to this organization" },
+        "clients":   { "type": "Client", "relationship": "one-to-many", "description": "Clients belonging to this organization" }
+      },
+      "useBakedInFields": true
+    },
+    "Contact": {
+      "description": "Represents a contact person for a client",
+      "fields": {
+        "name":      { "type": "String" },
+        "email":     { "type": "String" },
+        "clientId":  { "type": "String", "isForeignKey": true },
+        "client":    {
+          "type": "Client",
+          "relationship": "many-to-one",
+          "relationDetails": { "fields": ["clientId"], "references": ["id"] }
+        }
+      },
+      "useBakedInFields": true
+    },
+    "Package": {
+      "description": "Represents a service package",
+      "fields": {
+        "name":      { "type": "String" },
+        "clients":   { "type": "Client", "relationship": "many-to-many", "description": "Clients subscribed to this package" }
+      },
+      "useBakedInFields": true
+    },
+    "Permission": {
+      "description": "Represents a permission that can be assigned to users/roles",
+      "fields": {
+        "name":      { "type": "String", "attributes": ["@unique"] },
+        "users":     { "type": "User", "relationship": "many-to-many", "description": "Users who have this permission" }
+      },
+      "useBakedInFields": true
+    }
+  }
+}

@@ -10,7 +10,8 @@ class SettingsController extends Controller {
         parent::__construct();
         // Ensure user is authenticated
         if (!$this->app->getState('user')) {
-            return $this->redirectTo('/login');
+            $this->redirectTo('/login');
+            exit;
         }
     }
 

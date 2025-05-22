@@ -88,11 +88,14 @@ class Database {
                 
                 // Include and run migration
                 require_once $file;
-                // Convert filename like "001_create_organizations_table" to "CreateOrganizationsTable"
+                // Convert filename like "20250520_184654_create_user_table" to "CreateUserTable"
                 $baseName = pathinfo($file, PATHINFO_FILENAME);
-                $parts = explode('_', $baseName);
-                array_shift($parts); // Remove the numeric prefix
-                $className = 'LorPHP\\Database\\Migrations\\' . implode('', array_map('ucfirst', $parts));
+                // Extract the part after timestamp prefix
+                $baseName = preg_replace('/^\d{8}_\d{6}_/', '', $baseName);
+                // Convert snake_case to CamelCase for the class name
+                $className = str_replace(' ', '', ucwords(str_replace('_', ' ', $baseName)));
+                $fullClassName = 'LorPHP\\Database\\Migrations\\' . $className;
+                
                 $migration = new $className();
                 
                 $this->pdo->beginTransaction();

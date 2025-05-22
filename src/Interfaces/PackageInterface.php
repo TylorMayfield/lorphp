@@ -1,0 +1,116 @@
+<?php
+
+namespace LorPHP\Interfaces;
+
+/**
+ * Interface PackageInterface
+ * Represents a service package
+ *
+ * @property String $id Unique identifier for the record
+ * @property DateTime $createdAt Timestamp of when the record was created
+ * @property DateTime $updatedAt Timestamp of when the record was last updated
+ * @property Boolean $isActive Whether the record is active
+ * @property String|null $modifiedBy Identifier of the user who last modified the record
+ * @property String $name Name
+ * @property Client $clients Clients subscribed to this package
+ */
+interface PackageInterface
+{
+    /**
+     * Get the id
+     * @return String
+     */
+    public function getId();
+
+    /**
+     * Set the id
+     * @param String $id
+     * @return void
+     */
+    public function setId($id): void;
+
+    /**
+     * Get the createdAt
+     * @return DateTime
+     */
+    public function getCreatedAt();
+
+    /**
+     * Set the createdAt
+     * @param DateTime $createdAt
+     * @return void
+     */
+    public function setCreatedAt($createdAt): void;
+
+    /**
+     * Get the updatedAt
+     * @return DateTime
+     */
+    public function getUpdatedAt();
+
+    /**
+     * Set the updatedAt
+     * @param DateTime $updatedAt
+     * @return void
+     */
+    public function setUpdatedAt($updatedAt): void;
+
+    /**
+     * Get the isActive
+     * @return Boolean
+     */
+    public function getIsActive();
+
+    /**
+     * Set the isActive
+     * @param Boolean $isActive
+     * @return void
+     */
+    public function setIsActive($isActive): void;
+
+    /**
+     * Get the modifiedBy
+     * @return String|null
+     */
+    public function getModifiedBy();
+
+    /**
+     * Set the modifiedBy
+     * @param String|null $modifiedBy
+     * @return void
+     */
+    public function setModifiedBy($modifiedBy): void;
+
+    /**
+     * Get the name
+     * @return String
+     */
+    public function getName();
+
+    /**
+     * Set the name
+     * @param String $name
+     * @return void
+     */
+    public function setName($name): void;
+
+    /**
+     * Get the clients
+     * @return Client
+     */
+    public function getClients();
+
+    /**
+     * Set the clients
+     * @param Client $clients
+     * @return void
+     */
+    public function setClients($clients): void;
+
+    /**
+     * Get related clients
+     * @return Client[]
+     */
+    public function clients();
+
+}

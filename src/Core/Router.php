@@ -11,12 +11,47 @@ class Router {
             'handler' => $handler
         ];
     }
+
     public function get($path, $handler) {
         $this->addRoute('GET', $path, $handler);
     }
+
     public function post($path, $handler) {
         $this->addRoute('POST', $path, $handler);
-    }    public function dispatch() {
+    }
+
+    private function handle($handler, $params = []) {
+        if (is_callable($handler)) {
+            return $handler($params);
+        }
+        
+        if (is_string($handler) && strpos($handler, '@') !== false) {
+            list($controller, $method) = explode('@', $handler);
+            
+            // Add namespace if not present
+            if (strpos($controller, '\\') === false) {
+                $controller = "LorPHP\\Controllers\\$controller";
+            }
+            
+            if (!class_exists($controller)) {
+                error_log("Controller not found: {$controller}");
+                throw new \Exception("Controller not found: {$controller}");
+            }
+            
+            $instance = new $controller();
+            
+            if (!method_exists($instance, $method)) {
+                error_log("Method not found: {$controller}@{$method}");
+                throw new \Exception("Method not found: {$controller}@{$method}");
+            }
+            
+            return $instance->$method($params);
+        }
+        
+        throw new \Exception("Invalid route handler");
+    }
+
+    public function dispatch() {
         // Start output buffering to capture any unexpected output
         ob_start();
         
@@ -24,61 +59,58 @@ class Router {
             $method = $_SERVER['REQUEST_METHOD'];
             $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
             
+            error_log("Dispatching {$method} {$uri}");
+            error_log("Available routes: " . print_r($this->routes, true));
+            
             foreach ($this->routes as $route) {
-                    $params = [];
-                    if ($route['method'] === $method && $this->matchPath($route['path'], $uri, $params)) {
-                        // Handle POST data
-                        if ($method === 'POST' && empty($_POST) && !empty($_SERVER['CONTENT_LENGTH'])) {
-                            file_get_contents('php://input');
-                        }
-                        
-                        // Clear any output so far
-                        ob_clean();
-                        
-                        // Handle the route with parameters
-                        $result = $this->handle($route['handler'], $params);
+                $params = [];
+                if ($route['method'] === $method && $this->matchPath($route['path'], $uri, $params)) {
+                    error_log("Matched route: " . print_r($route, true));
                     
-                    // Get any buffered content
-                    $output = ob_get_clean();
+                    // Handle the route with parameters
+                    $result = $this->handle($route['handler'], $params);
                     
-                    // If we have both result and output, prioritize the result
-                    if (!is_null($result)) {
-                        return $result;
-                    } else if (!empty($output)) {
-                        return $output;
-                    }
-                    
-                    return null;
+                    // Clean up the buffer and return the result
+                    ob_end_clean();
+                    return $result;
                 }
             }
             
-            // Clear buffer before 404
-            ob_clean();
+            // No route matched
+            error_log("No route matched for {$method} {$uri}");
+            ob_end_clean();
             return $this->notFound();
             
         } catch (\Throwable $e) {
-            // Clear any output
-            ob_clean();
+            error_log("Router error: " . $e->getMessage() . "\n" . $e->getTraceAsString());
+            ob_end_clean();
             throw $e;
         }
     }
 
+    private function notFound() {
+        http_response_code(404);
+        $view = new View();
+        return $view->render('error', ['message' => 'Page not found']);
+    }
+
     private function matchPath($pattern, $uri, &$params = []) {
-        // Normalize URIs by removing trailing slashes except for root
+        // Normalize URIs
         $uri = $uri === '/' ? '/' : rtrim($uri, '/');
         $pattern = $pattern === '/' ? '/' : rtrim($pattern, '/');
         
-        // Check for exact match first
+        error_log("Matching pattern '{$pattern}' against URI '{$uri}'");
+        
         if ($pattern === $uri) {
+            error_log("Exact match found");
             return true;
         }
         
-        // Convert route pattern to regex
         $pattern = preg_replace('/\{([a-zA-Z]+)\}/', '(?P<$1>[^/]+)', $pattern);
         $pattern = "#^" . $pattern . "$#";
         
-        // Try to match and extract parameters
         if (preg_match($pattern, $uri, $matches)) {
+            error_log("Pattern match found: " . print_r($matches, true));
             foreach ($matches as $key => $value) {
                 if (is_string($key)) {
                     $params[$key] = $value;
@@ -86,34 +118,8 @@ class Router {
             }
             return true;
         }
+        
+        error_log("No match found");
         return false;
-    }    private function handle($handler, $params = []) {
-        try {
-            if (is_callable($handler)) {
-                return $handler($params);
-            }
-            
-            if (is_string($handler) && strpos($handler, '@') !== false) {
-                list($controller, $method) = explode('@', $handler);
-                $controller = "LorPHP\\Controllers\\$controller";
-                
-                if (!class_exists($controller)) {
-                    throw new \Exception("Controller not found: {$controller}");
-                }
-                
-                $instance = new $controller();
-                return $instance->$method(...array_values($params));
-            }
-            
-            throw new \Exception("Invalid route handler");
-            
-        } catch (\Throwable $e) {
-            throw $e;
-        }
-    }
-
-    private function notFound() {
-        header("HTTP/1.0 404 Not Found");
-        echo "404 Not Found";
     }
 }

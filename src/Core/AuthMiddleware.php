@@ -48,49 +48,37 @@ class AuthMiddleware {
 
     /**
      * Handle authentication check
-     *
-     * @return bool
+     * @return void
      */
-    public static function handle(): bool {
-        self::ensureAdminExists();
-        $token = $_COOKIE['jwt'] ?? null;
+    public static function handle(): void {
+        $app = Application::getInstance();
         
-        if (!$token) {
-            return false;
-        }
-        $payload = User::validateJWT($token);
-        if (!$payload) {
-            self::clearToken();
-            return false;
-        }
-        
-        // Fetch fresh user data from database
-        $db = Database::getInstance();
-        // First try to find the user without the active check to see if they exist at all
-        $inactiveUser = $db->findOne('users', ['id' => $payload['sub']]);
-        if (!$inactiveUser) {
-            self::clearToken();
-            return false;
-        }
-        // Now check with active status
-        $userData = $db->findOne('users', ['id' => $payload['sub'], 'active' => 1]);
-        
-        if (!$userData) {
-            self::clearToken();
-            return false;
+        // Check for session
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
         }
 
-        // Create and populate user model
-        $user = new User();
-        foreach ($userData as $key => $value) {
-            $user->__set($key, $value);
+        // Check if user is logged in
+        if (isset($_SESSION['user_id'])) {
+            $db = Database::getInstance();
+            $user = $db->findOne('users', ['id' => $_SESSION['user_id'], 'active' => 1]);
+            
+            if ($user) {
+                // Create User model instance and set it in application state
+                $userModel = new User();
+                $userModel->fill($user);
+                $app->setState('user', $userModel);
+            } else {
+                // Invalid user ID in session, clear it
+                unset($_SESSION['user_id']);
+                $app->setState('user', null);
+            }
+        } else {
+            $app->setState('user', null);
         }
-        
-        // Set the user in the application state
-        $app = Application::getInstance();
-        $app->setState('user', $user);
-        
-        return true;
+
+        // Ensure admin exists
+        self::ensureAdminExists();
     }
     
     /**

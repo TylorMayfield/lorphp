@@ -8,13 +8,14 @@ abstract class Model {
     use HasUuid;
 
     protected $attributes = [];
-    protected $schema = [];
-    protected $errors = [];
-    protected $table;
+    protected static $table;
+    protected static $fillable = [];
+    protected $relations = [];
     protected $useUuid = true;
     protected $timestamps = true;
-    protected $relations = [];
-    protected $isAuditable = false;
+
+    protected $exists = false;
+    protected $dirty = [];
 
     public function __construct() {
         if ($this->useUuid) {
@@ -37,6 +38,107 @@ abstract class Model {
 
     public function __set($name, $value) {
         $this->attributes[$name] = $value;
+        $this->dirty[] = $name;
+    }
+
+    // Helper method for implementing all other getters
+    protected function genericGetter($field) {
+        return $this->attributes[$field] ?? null;
+    }
+
+    // Helper method for implementing all other setters 
+    protected function genericSetter($field, $value): void {
+        $this->attributes[$field] = $value;
+    }
+
+    // Baked in field getters/setters
+    public function getId() {
+        return $this->genericGetter('id');
+    }
+
+    public function setId($value): void {
+        $this->genericSetter('id', $value);
+    }
+
+    public function getCreatedAt() {
+        return $this->genericGetter('createdAt');
+    }
+
+    public function setCreatedAt($value): void {
+        $this->genericSetter('createdAt', $value);
+    }
+
+    public function getUpdatedAt() {
+        return $this->genericGetter('updatedAt');
+    }
+
+    public function setUpdatedAt($value): void {
+        $this->genericSetter('updatedAt', $value);
+    }
+
+    public function getIsActive() {
+        return $this->genericGetter('isActive');
+    }
+
+    public function setIsActive($value): void {
+        $this->genericSetter('isActive', $value);
+    }
+
+    public function getModifiedBy() {
+        return $this->genericGetter('modifiedBy');
+    }
+
+    public function setModifiedBy($value): void {
+        $this->genericSetter('modifiedBy', $value);
+    }
+
+    // Generic field value getters and setters
+    public function getName() {
+        return $this->genericGetter('name');
+    }
+
+    public function setName($value): void {
+        $this->genericSetter('name', $value);
+    }
+
+    public function getEmail() {
+        return $this->genericGetter('email');
+    }
+
+    public function setEmail($value): void {
+        $this->genericSetter('email', $value);
+    }
+
+    public function getPassword() {
+        return $this->genericGetter('password');
+    }
+
+    public function setPassword($value): void {
+        $this->genericSetter('password', $value);
+    }
+
+    public function getRole() {
+        return $this->genericGetter('role');
+    }
+
+    public function setRole($value): void {
+        $this->genericSetter('role', $value);
+    }
+
+    public function getOrganizationId() {
+        return $this->genericGetter('organizationId');
+    }
+
+    public function setOrganizationId($value): void {
+        $this->genericSetter('organizationId', $value);
+    }
+
+    public function getClientId() {
+        return $this->genericGetter('clientId');
+    }
+
+    public function setClientId($value): void {
+        $this->genericSetter('clientId', $value);
     }
 
     protected function loadRelation(string $name, string $class, string $foreignKey) {
@@ -63,187 +165,190 @@ abstract class Model {
         return $this->relations[$name];
     }
 
-    public function getSchema() {
-        return $this->schema;
-    }
-
-    protected function validateAndSet($name, $value) {
-        $type = $this->schema[$name]['type'];
-        $rules = $this->schema[$name]['rules'] ?? [];
-
-        if ($this->validateType($value, $type) && $this->validateRules($value, $rules)) {
-            $this->attributes[$name] = $value;
-            return true;
-        }
-        return false;
-    }
-
-    protected function validateType($value, $type) {
-        if ($value === null) return true;
+    protected function save(): bool {
+        $db = Database::getInstance();
         
-        switch ($type) {
-            case 'string':
-                return is_string($value);
-            case 'int':
-                return is_numeric($value);
-            case 'boolean':
-                return is_bool($value);
-            default:
-                return true;
-        }
-    }
-
-    protected function validateRules($value, $rules) {
-        if (empty($rules)) return true;
-        
-        foreach ($rules as $rule => $param) {
-            if (!$this->validateRule($value, $rule, $param)) {
+        try {
+            $db->beginTransaction();
+            
+            // Call beforeSave event
+            if (!$this->beforeSave()) {
+                $db->rollBack();
                 return false;
             }
-        }
-        return true;
-    }
 
-    protected function validateRule($value, $rule, $param) {
-        if ($value === null && !($rule === 'required')) return true;
-
-        switch ($rule) {
-            case 'required':
-                return !empty($value);
-            case 'min':
-                return strlen($value) >= $param;
-            case 'max':
-                return strlen($value) <= $param;
-            case 'email':
-                return empty($value) || filter_var($value, FILTER_VALIDATE_EMAIL) !== false;
-            case 'pattern':
-                return preg_match($param, $value);
-            default:
-                return true;
-        }
-    }
-
-    public function save(): bool {
-        try {
-            // Start transaction if auditing is enabled
-            $db = Database::getInstance();
-            $isAuditing = $this->isAuditable && in_array(Auditable::class, class_uses_recursive($this));
-            if ($isAuditing) {
-                $db->beginTransaction();
+            $data = $this->getModifiedAttributes();
+            
+            // Add timestamps
+            $now = date('Y-m-d H:i:s');
+            if (!$this->exists) {
+                $data['created_at'] = $now;
             }
-
-            // Validate all fields against schema
-            foreach ($this->schema as $field => $config) {
-                $value = $this->attributes[$field] ?? null;
-                if (!$this->validateType($value, $config['type'])) {
-                    $this->errors[] = "Invalid type for field {$field}";
-                    return false;
-                }
-                if (!$this->validateRules($value, $config['rules'] ?? [])) {
-                    $this->errors[] = "Validation failed for field {$field}";
-                    return false;
-                }
-            }
-
-            // Only include fields that are defined in the schema
-            $data = [];
-            foreach ($this->schema as $field => $config) {
-                if (array_key_exists($field, $this->attributes)) {
-                    $data[$field] = $this->attributes[$field];
+            $data['updated_at'] = $now;
+            
+            if ($this->exists) {
+                $success = $db->update(static::$tableName, $data, ['id' => $this->getId()]);
+            } else {
+                $id = $db->insert(static::$tableName, $data);
+                if ($id) {
+                    $this->setId($id);
+                    $this->exists = true;
+                    $success = true;
+                } else {
+                    $success = false;
                 }
             }
             
-            $now = date('Y-m-d H:i:s');
-            if ($this->timestamps) {
-                if (!isset($this->id)) {
-                    $data['created_at'] = $now;
-                }
-                $data['updated_at'] = $now;
-            }
-
-            $isNew = !isset($this->id);
-            if ($isNew) {
-                if ($this->useUuid) {
-                    $data['id'] = $this->id;
-                }
-                $success = $db->insert($this->table, $data) !== false;
+            if ($success) {
+                $this->dirty = [];
+                $this->afterSave();
+                $db->commit();
+                return true;
             } else {
-                $success = $db->update($this->table, $data, ['id' => $this->id]);
-            }
-
-            if (!$success) {
-                if ($isAuditing) {
-                    $db->rollBack();
-                }
-                $this->errors[] = "Failed to save to database";
+                $db->rollBack();
                 return false;
             }
-
-            // Create audit record if needed
-            if ($isAuditing) {
-                 $this->auditEvent($isNew ? 'create' : 'update');
-                $db->commit();
-            }
-
-            return true;
         } catch (\Exception $e) {
-            if (isset($db) && $isAuditing) {
-                $db->rollBack();
-            }
-            $this->errors[] = $e->getMessage();
-            error_log("Error saving {$this->table} record: " . $e->getMessage());
+            error_log("Error saving model: " . $e->getMessage());
+            $db->rollBack();
             return false;
         }
     }
 
-    public function getErrors() {
-        return $this->errors;
+    protected function getModifiedAttributes(): array {
+        $attributes = [];
+        foreach ($this->attributes as $key => $value) {
+            if (!$this->exists || in_array($key, $this->dirty)) {
+                $attributes[$key] = $value;
+            }
+        }
+        return $attributes;
     }
 
-    public static function findOne($conditions) {
-        $db = Database::getInstance();
-        $model = new static();
-        $table = $model->table;
-        
-        // If conditions is not an array, assume it's just the ID
-        if (!is_array($conditions)) {
-            $conditions = ['id' => $conditions];
+    // Model events
+    protected function beforeSave(): bool {
+        return true;
+    }
+
+    protected function afterSave(): void {
+    }
+
+    // Relationship methods
+    protected function hasOne(string $class, ?string $foreignKey = null): ?Model {
+        if (!$foreignKey) {
+            $foreignKey = strtolower(get_class($this)) . '_id';
         }
         
-        $where = [];
-        $params = [];
-        foreach ($conditions as $field => $value) {
-            $where[] = "{$field} = ?";
-            $params[] = $value;
-        }
-        $whereClause = implode(' AND ', $where);
-        
-        $sql = "SELECT * FROM {$table} WHERE {$whereClause} LIMIT 1";
-        $stmt = $db->query($sql, $params);
-        $result = $stmt->fetch(\PDO::FETCH_ASSOC);
-        
-        if (!$result) {
+        if (!$this->getId()) {
             return null;
         }
         
-        foreach ($result as $key => $value) {
-            $model->attributes[$key] = $value;
+        $db = Database::getInstance();
+        $relatedTable = (new $class)->table;
+        $data = $db->findOne($relatedTable, [$foreignKey => $this->getId()]);
+        
+        if ($data) {
+            $model = new $class();
+            $model->fill($data);
+            $model->exists = true;
+            return $model;
         }
         
-        return $model;
+        return null;
     }
-    
-    /**
-     * Fill the model with an array of attributes.
-     *
-     * @param array $attributes
-     * @return $this
-     */
-    public function fill(array $attributes) {
-        foreach ($attributes as $key => $value) {
-            $this->__set($key, $value);
+
+    protected function hasMany(string $class, ?string $foreignKey = null): array {
+        if (!$foreignKey) {
+            $foreignKey = strtolower(get_class($this)) . '_id';
         }
         
-        return $this;
+        if (!$this->getId()) {
+            return [];
+        }
+        
+        $db = Database::getInstance();
+        $relatedTable = (new $class)->table;
+        $data = $db->getAll($relatedTable, [$foreignKey => $this->getId()]);
+        
+        $results = [];
+        foreach ($data as $row) {
+            $model = new $class();
+            $model->fill($row);
+            $model->exists = true;
+            $results[] = $model;
+        }
+        
+        return $results;
+    }
+
+    protected function belongsTo(string $class, ?string $foreignKey = null): ?Model {
+        if (!$foreignKey) {
+            $foreignKey = strtolower(class_basename($class)) . '_id';
+        }
+        
+        $foreignId = $this->attributes[$foreignKey] ?? null;
+        if (!$foreignId) {
+            return null;
+        }
+        
+        $db = Database::getInstance();
+        $relatedTable = (new $class)->table;
+        $data = $db->get($relatedTable, $foreignId);
+        
+        if ($data) {
+            $model = new $class();
+            $model->fill($data);
+            $model->exists = true;
+            return $model;
+        }
+        
+        return null;
+    }
+
+    protected function belongsToMany(string $class, string $pivotTable, ?string $foreignKey = null, ?string $relatedKey = null): array {
+        if (!$foreignKey) {
+            $foreignKey = strtolower(get_class($this)) . '_id';
+        }
+        if (!$relatedKey) {
+            $relatedKey = strtolower(class_basename($class)) . '_id';
+        }
+        
+        if (!$this->getId()) {
+            return [];
+        }
+        
+        $db = Database::getInstance();
+        $relatedTable = (new $class)->table;
+        
+        $sql = "SELECT {$relatedTable}.* FROM {$relatedTable} ";
+        $sql .= "INNER JOIN {$pivotTable} ON {$pivotTable}.{$relatedKey} = {$relatedTable}.id ";
+        $sql .= "WHERE {$pivotTable}.{$foreignKey} = ?";
+        
+        $data = $db->fetchAll($sql, [$this->getId()]);
+        
+        $results = [];
+        foreach ($data as $row) {
+            $model = new $class();
+            $model->fill($row);
+            $model->exists = true;
+            $results[] = $model;
+        }
+        
+        return $results;
+    }
+
+    public function fill(array $attributes): void {
+        foreach ($attributes as $key => $value) {
+            if (in_array($key, static::$fillable)) {
+                $this->attributes[$key] = $value;
+            }
+        }
+        $this->exists = true;
+    }
+
+    // Helper method to get class basename
+    private static function class_basename($class): string {
+        $class = is_object($class) ? get_class($class) : $class;
+        return basename(str_replace('\\', '/', $class));
     }
 }

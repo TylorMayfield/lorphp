@@ -1,0 +1,178 @@
+<?php
+
+namespace LorPHP\Interfaces;
+
+/**
+ * Interface UserInterface
+ * Represents a user in the system
+ *
+ * @property String $id Unique identifier for the record
+ * @property DateTime $createdAt Timestamp of when the record was created
+ * @property DateTime $updatedAt Timestamp of when the record was last updated
+ * @property Boolean $isActive Whether the record is active
+ * @property String|null $modifiedBy Identifier of the user who last modified the record
+ * @property String $name Name
+ * @property String $email Email
+ * @property String $password Password
+ * @property String|null $role Role
+ * @property Client $clients Clients associated with this user
+ * @property Organization $organizations Organizations this user belongs to
+ */
+interface UserInterface
+{
+    /**
+     * Get the id
+     * @return String
+     */
+    public function getId();
+
+    /**
+     * Set the id
+     * @param String $id
+     * @return void
+     */
+    public function setId($id): void;
+
+    /**
+     * Get the createdAt
+     * @return DateTime
+     */
+    public function getCreatedAt();
+
+    /**
+     * Set the createdAt
+     * @param DateTime $createdAt
+     * @return void
+     */
+    public function setCreatedAt($createdAt): void;
+
+    /**
+     * Get the updatedAt
+     * @return DateTime
+     */
+    public function getUpdatedAt();
+
+    /**
+     * Set the updatedAt
+     * @param DateTime $updatedAt
+     * @return void
+     */
+    public function setUpdatedAt($updatedAt): void;
+
+    /**
+     * Get the isActive
+     * @return Boolean
+     */
+    public function getIsActive();
+
+    /**
+     * Set the isActive
+     * @param Boolean $isActive
+     * @return void
+     */
+    public function setIsActive($isActive): void;
+
+    /**
+     * Get the modifiedBy
+     * @return String|null
+     */
+    public function getModifiedBy();
+
+    /**
+     * Set the modifiedBy
+     * @param String|null $modifiedBy
+     * @return void
+     */
+    public function setModifiedBy($modifiedBy): void;
+
+    /**
+     * Get the name
+     * @return String
+     */
+    public function getName();
+
+    /**
+     * Set the name
+     * @param String $name
+     * @return void
+     */
+    public function setName($name): void;
+
+    /**
+     * Get the email
+     * @return String
+     */
+    public function getEmail();
+
+    /**
+     * Set the email
+     * @param String $email
+     * @return void
+     */
+    public function setEmail($email): void;
+
+    /**
+     * Get the password
+     * @return String
+     */
+    public function getPassword();
+
+    /**
+     * Set the password
+     * @param String $password
+     * @return void
+     */
+    public function setPassword($password): void;
+
+    /**
+     * Get the role
+     * @return String|null
+     */
+    public function getRole();
+
+    /**
+     * Set the role
+     * @param String|null $role
+     * @return void
+     */
+    public function setRole($role): void;
+
+    /**
+     * Get the clients
+     * @return Client
+     */
+    public function getClients();
+
+    /**
+     * Set the clients
+     * @param Client $clients
+     * @return void
+     */
+    public function setClients($clients): void;
+
+    /**
+     * Get the organizations
+     * @return Organization
+     */
+    public function getOrganizations();
+
+    /**
+     * Set the organizations
+     * @param Organization $organizations
+     * @return void
+     */
+    public function setOrganizations($organizations): void;
+
+    /**
+     * Get related clients
+     * @return Client[]
+     */
+    public function clients();
+
+    /**
+     * Get related organizations
+     * @return Organization[]
+     */
+    public function organizations();
+
+}

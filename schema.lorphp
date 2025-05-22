@@ -1,0 +1,50 @@
+// LorPHP schema definition file (Prisma-like syntax)
+// This file defines your models, fields, and relationships
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  active    Boolean  @default(true)
+  role      String?
+  clients   Client[]
+  organizations Organization[]
+}
+
+model Client {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  organization Organization @relation(fields: [organizationId], references: [id])
+  organizationId Int
+  contacts  Contact[]
+  packages  Package[]
+}
+
+model Organization {
+  id        Int      @id @default(autoincrement())
+  name      String
+  users     User[]
+  clients   Client[]
+}
+
+model Contact {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String
+  client    Client   @relation(fields: [clientId], references: [id])
+  clientId  Int
+}
+
+model Package {
+  id        Int      @id @default(autoincrement())
+  name      String
+  clients   Client[]
+}
+
+model Permission {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  users     User[]
+}

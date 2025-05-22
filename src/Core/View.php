@@ -51,36 +51,20 @@ class View {
             $__view = $this;
 
             // Include the view file
-            include $viewPath;
+            require $viewPath;
             
-            // Get the view content
-            $this->content = ob_get_clean();
+            // Get the content
+            $content = ob_get_clean();
             
-            // If we have a layout, render it with the content
+            // Render with layout if one is set
             if ($this->layout) {
-                ob_start();
-                
-                $layoutPath = $this->findView("layouts/{$this->layout}");
-                if (!$layoutPath) {
-                    throw new \Exception("Layout not found: {$this->layout}");
-                }
-                
-                // Re-extract data for layout
-                extract($this->data);
-                
-                // Include the layout file
-                require $layoutPath;
-                
-                // Get the final rendered content
-                $finalContent = ob_get_clean();
-                return $finalContent;
+                return $this->renderLayout($content);
             }
             
-            // No layout, return the view content
-            return $this->content;
+            return $content;
             
         } catch (\Throwable $e) {
-            // Clean up any output buffers we started
+            // Clean up output buffers
             while (ob_get_level() > $initialObLevel) {
                 ob_end_clean();
             }

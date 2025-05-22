@@ -8,11 +8,13 @@ class Application {
     private static $instance = null;
     private $state = [];
     private $config = [];
+    private $router;
     
     public function __construct() {
         self::$instance = $this;
         $this->loadConfig();
         $this->initializeDebug();
+        $this->router = new Router();
     }
 
     public static function getInstance() {
@@ -54,80 +56,60 @@ class Application {
         return $config;
     }
 
+    public function getRouter() {
+        return $this->router;
+    }
+
+    public function __get($name) {
+        if ($name === 'router') {
+            return $this->router;
+        }
+        throw new \Exception("Property {$name} does not exist");
+    }
+
     public function run() {
-        // Check authentication status early
-        AuthMiddleware::handle();
-        
-        // Apply rate limiting
-        RateLimitMiddleware::handle();
-        
-        $router = new Router();
-        
-        // Configure routes
-        $router->get('/', 'HomeController@index');
-        $router->get('/offline', function() {
-            return (new View())->render('offline');
-        });
-        $router->get('/test', function() {
-            return (new View())->render('test');
-        });
-        
-        // Auth routes
-        $router->get('/login', 'LoginController@index');
-        $router->post('/login', 'LoginController@index');
-        $router->get('/register', 'RegisterController@index');
-        $router->post('/register', 'RegisterController@index');
-        $router->get('/dashboard', 'DashboardController@index');
-        $router->post('/logout', 'AuthController@logout');
-        
-        // Grafana Metrics Routes
-        $router->post('/metrics/query', 'MetricsController@query');
-        $router->get('/metrics/search', 'MetricsController@search');
-        $router->get('/metrics/health', 'MetricsController@health');
-        
-        // Settings Routes
-        $router->get('/settings', 'SettingsController@index');
-        $router->post('/settings/update', 'SettingsController@update');
-
-        // Admin Routes
-        $router->get('/admin', 'AdminController@index');
-        $router->get('/admin/users', 'AdminController@users');
-        $router->get('/admin/organizations', 'AdminController@organizations');
-        $router->post('/admin/users/{id}/toggle-status', 'AdminController@toggleUserStatus');
-
-        // CRM Routes
-        $router->get('/clients', 'ClientController@index');
-        $router->get('/clients/create', 'ClientController@create');
-        $router->post('/clients', 'ClientController@create');
-        $router->get('/clients/{id}', 'ClientController@show');
-        $router->get('/clients/{id}/edit', 'ClientController@edit');
-        $router->post('/clients/{id}/update', 'ClientController@update');
-        $router->post('/clients/{id}/delete', 'ClientController@delete');
-        $router->post('/clients/{id}/contacts', 'ClientController@addContact');
-
-        // Package Routes
-        $router->get('/packages', 'PackageController@index');
-        $router->get('/packages/create', 'PackageController@create');
-        $router->post('/packages', 'PackageController@create');
-        $router->get('/packages/{id}', 'PackageController@show');
-        $router->get('/packages/{id}/edit', 'PackageController@edit');
-        $router->post('/packages/{id}/update', 'PackageController@update');
-        $router->post('/packages/{id}/delete', 'PackageController@delete');
-        $router->post('/packages/{id}/assign', 'PackageController@assignToClient');
-        $router->post('/packages/{id}/clients/{clientId}/remove', 'PackageController@removeFromClient');
-        
-        // Dispatch the request
         try {
-            $response = $router->dispatch();
-            if (!is_null($response)) {
-                echo $response;
+            // Try to run middleware, but continue if they fail
+            try {
+                AuthMiddleware::handle();
+            } catch (\Throwable $e) {
+                error_log("Auth middleware error: " . $e->getMessage());
             }
+
+            try {
+                RateLimitMiddleware::handle();
+            } catch (\Throwable $e) {
+                error_log("Rate limit middleware error: " . $e->getMessage());
+            }
+            
+            // Load routes from routes.php
+            $routesFile = dirname(__DIR__, 2) . '/routes.php';
+            if (file_exists($routesFile)) {
+                require $routesFile;
+            } else {
+                error_log('routes.php not found. No routes loaded.');
+                throw new \Exception('Routes file not found');
+            }
+            
+            // Dispatch the request
+            $response = $this->router->dispatch();
+            
+            if (is_null($response)) {
+                error_log('Router returned null response');
+                throw new \Exception('No response from router');
+            }
+            
+            echo $response;
+            
         } catch (\Throwable $e) {
+            error_log("Application error: " . $e->getMessage() . "\n" . $e->getTraceAsString());
+            
             if ($this->config['app']['debug'] ?? false) {
                 echo "<pre>Error: " . htmlspecialchars($e->getMessage()) . "\n" . 
                      htmlspecialchars($e->getTraceAsString()) . "</pre>";
             } else {
-                echo "An error occurred. Please try again later.";
+                $view = new View();
+                echo $view->render('error', ['message' => 'An error occurred']);
             }
         }
     }
