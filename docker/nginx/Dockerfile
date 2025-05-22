@@ -19,6 +19,6 @@ RUN apk add --no-cache openssl && \
 # Create directory for logs
 RUN mkdir -p /var/log/nginx
 
-EXPOSE 80 443
+EXPOSE 80 443 8080
 
 CMD ["nginx", "-g", "daemon off;"]

@@ -41,8 +41,8 @@ RUN chown -R www-data:www-data /var/www/html && \
 # Copy supervisor configuration
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-# Expose port
-EXPOSE 80
+# Expose default HTTP/HTTPS and 8080 for Kinsta compatibility
+EXPOSE 80 443 8080
 
 # Start supervisor (which manages nginx and php-fpm)
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
