@@ -44,8 +44,9 @@ RUN composer install --no-interaction --optimize-autoloader --no-dev
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html/storage
 
-# Expose the PORT that will be set by Kinsta
-EXPOSE $PORT
+
+# Expose the default HTTP and HTTPS ports (actual port is set at runtime by Kinsta)
+EXPOSE 80 443
 
 # Use the start script as entrypoint
 CMD ["/start.sh"]
