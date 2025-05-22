@@ -4,7 +4,8 @@ FROM php:8.2-fpm-alpine
 RUN apk add --no-cache \
     nginx \
     sqlite \
-    supervisor
+    supervisor \
+    acl
 
 # Install PHP extensions
 RUN docker-php-ext-install pdo pdo_sqlite
@@ -13,6 +14,7 @@ RUN docker-php-ext-install pdo pdo_sqlite
 COPY docker/nginx.conf /etc/nginx/nginx.conf
 
 # Configure PHP-FPM
+COPY docker/php-fpm.conf /usr/local/etc/php-fpm.d/www.conf
 RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 
 # Create directory structure
@@ -22,10 +24,13 @@ RUN mkdir -p /var/www/html /run/nginx /run/php
 COPY . /var/www/html
 WORKDIR /var/www/html
 
-# Ensure storage directory exists and is writable
-RUN mkdir -p /var/www/html/storage && \
-    chown -R www-data:www-data /var/www/html/storage && \
-    chmod -R 775 /var/www/html/storage
+# Set proper permissions
+RUN chown -R www-data:www-data /var/www/html && \
+    chmod -R 755 /var/www/html && \
+    chmod -R 775 /var/www/html/storage && \
+    chmod -R 775 /var/www/html/public && \
+    # Ensure PHP-FPM and Nginx can write to run directories
+    chown -R www-data:www-data /run/nginx /run/php
 
 # Copy supervisor configuration
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
