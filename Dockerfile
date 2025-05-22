@@ -4,11 +4,16 @@ FROM php:8.2-fpm-alpine
 RUN apk add --no-cache \
     nginx \
     sqlite \
+    sqlite-dev \
     supervisor \
     acl
 
 # Install PHP extensions
-RUN docker-php-ext-install pdo pdo_sqlite
+RUN docker-php-ext-configure sqlite3 && \
+    docker-php-ext-install \
+    pdo \
+    pdo_sqlite \
+    sqlite3
 
 # Configure nginx
 COPY docker/nginx.conf /etc/nginx/nginx.conf
