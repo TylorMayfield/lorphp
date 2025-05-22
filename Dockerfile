@@ -16,8 +16,10 @@ RUN apk add --no-cache --virtual .build-deps \
     pdo_sqlite \
     && apk del .build-deps
 
-# Configure nginx
+
+# Configure nginx main config and ensure default.conf is present
 COPY docker/nginx.conf /etc/nginx/nginx.conf
+COPY docker/nginx/conf.d/default.conf /etc/nginx/conf.d/default.conf
 
 # Configure PHP-FPM
 COPY docker/php-fpm.conf /usr/local/etc/php-fpm.d/www.conf
