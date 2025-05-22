@@ -8,12 +8,13 @@ RUN apk add --no-cache \
     supervisor \
     acl
 
-# Install PHP extensions
-RUN docker-php-ext-configure sqlite3 && \
-    docker-php-ext-install \
+# Install build dependencies and PHP extensions
+RUN apk add --no-cache --virtual .build-deps \
+    $PHPIZE_DEPS \
+    && docker-php-ext-install \
     pdo \
     pdo_sqlite \
-    sqlite3
+    && apk del .build-deps
 
 # Configure nginx
 COPY docker/nginx.conf /etc/nginx/nginx.conf
