@@ -94,9 +94,7 @@ PHP;
         }
 
         return implode("\n", $methods);
-    }
-
-    private static function generateGettersAndSetters(array $fields): string {
+    }    private static function generateGettersAndSetters(array $fields): string {
         $methods = [];
         
         foreach ($fields as $field => $details) {
@@ -106,19 +104,40 @@ PHP;
             }
 
             $type = self::getPHPType($details['type'] ?? 'string');
-            $methodName = ucfirst($field);
             
-            // Getter
-            $methods[] = <<<PHP
+            // Generate both camelCase and snake_case versions
+            $camelField = $field;
+            $snakeField = strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $field));
+            
+            if ($camelField !== $snakeField) {
+                // Generate snake_case version for interface compatibility
+                $snakeMethodName = str_replace('_', '', ucwords($snakeField, '_'));
+                $methods[] = <<<PHP
                 
-    public function get{$methodName}()
+    public function get{$snakeMethodName}()
     {
-        return \$this->{$field};
+        return \$this->{$camelField};
     }
 
-    public function set{$methodName}(\${$field}): void
+    public function set{$snakeMethodName}(\${$snakeField}): void
     {
-        \$this->{$field} = \${$field};
+        \$this->{$camelField} = \${$snakeField};
+    }
+PHP;
+            }
+            
+            // Generate camelCase version for convenience
+            $camelMethodName = ucfirst($camelField);
+            $methods[] = <<<PHP
+                
+    public function get{$camelMethodName}()
+    {
+        return \$this->{$camelField};
+    }
+
+    public function set{$camelMethodName}(\${$camelField}): void
+    {
+        \$this->{$camelField} = \${$camelField};
     }
 PHP;
         }
@@ -138,12 +157,53 @@ PHP;
  */
 
 PHP;
-    }
-
-    private static function generateRelationshipMethods(array $fields): string {
+    }    private static function generateRelationshipMethods(array $fields): string {
         $methods = [];
         
         foreach ($fields as $field => $details) {
+            // Generate custom methods defined in the schema
+            if (isset($details['methods'])) {
+                foreach ($details['methods'] as $methodName => $methodDetails) {
+                    $returnType = $methodDetails['returns'];
+                    // Convert array notation to PHP return type                    $phpReturnType = 'array';
+                    if (str_ends_with($returnType, '[]')) {
+                        $itemType = substr($returnType, 0, -2);
+                        $docReturnType = "$itemType[]";
+                    } else {
+                        $docReturnType = $returnType;
+                        $phpReturnType = str_ends_with($returnType, '[]') ? 'array' : $returnType;
+                    }
+                    
+                    $filterParam = '';
+                    $filterDoc = '';
+                    if (isset($methodDetails['filter']) && $methodDetails['filter']) {
+                        $filterParam = 'array $filters = []';
+                        $filterDoc = "@param array \$filters Optional filters to apply\n     * ";
+                    }
+                    
+                    $methods[] = <<<PHP
+                
+    /**
+     * {$methodDetails['description']}
+     * {$filterDoc}@return {$docReturnType}
+     */
+    public function {$methodName}($filterParam): {$phpReturnType} 
+    {
+        if (!isset(\$this->relations['{$field}'])) {
+            \$this->loadRelation('{$field}', {$field}::class);
+        }
+        
+        if (!isset(\$this->relations['{$field}'])) {
+            return [];
+        }
+        
+        \$items = \$this->relations['{$field}']->{$methodName}();
+        return \$items;
+    }
+PHP;
+                }
+            }
+
             if (!isset($details['relationship'])) {
                 continue;
             }
@@ -192,13 +252,121 @@ PHP;
         return implode("\n", $methods);
     }
 
-    public static function generateModelContent(string $entityName, array $fields, string $tableName, array $fillableFields): string {
+    private static function handleArrayReturnType(string $returnType): array {
+        $phpReturnType = 'array';
+        $docReturnType = $returnType;
+        
+        // If the type ends in [] or is itself an array, use array for PHP return type
+        if (str_contains($returnType, '[]') || $returnType === 'array') {
+            if (str_ends_with($returnType, '[]')) {
+                $itemType = substr($returnType, 0, -2);
+                $docReturnType = "$itemType[]";
+            }
+        } else {
+            $phpReturnType = $returnType;
+        }
+        
+        return [$phpReturnType, $docReturnType];
+    }
+
+    private static function generateCustomRelationshipMethods(array $fields): string {
+        $methods = [];
+        
+        foreach ($fields as $field => $details) {
+            if (!isset($details['methods'])) {
+                continue;
+            }
+
+            foreach ($details['methods'] as $methodName => $methodDetails) {
+                $returnType = $methodDetails['returns'] ?? 'array';
+                [$phpReturnType, $docReturnType] = self::handleArrayReturnType($returnType);
+                $description = $methodDetails['description'] ?? '';
+                $filter = $methodDetails['filter'] ?? false;
+
+                if ($filter) {
+                    $methods[] = <<<PHP
+                
+    /**
+     * {$description}
+     * @param array \$filters Optional filters to apply
+     * @return {$docReturnType}
+     */
+    public function {$methodName}(array \$filters = []): {$phpReturnType} 
+    {
+        if (!isset(\$this->relations['{$field}'])) {
+            \$this->loadRelation('{$field}', {$field}::class);
+        }
+        
+        if (!isset(\$this->relations['{$field}'])) {
+            return [];
+        }
+        
+        \$items = \$this->relations['{$field}']->{$methodName}();
+        
+        if (empty(\$filters)) {
+            return \$items;
+        }
+        
+        return array_filter(\$items, function(\$item) use (\$filters) {
+            foreach (\$filters as \$key => \$value) {
+                if (\$item->{\$key} !== \$value) {
+                    return false;
+                }
+            }
+            return true;
+        });
+    }
+PHP;
+                } else {
+                    $methods[] = <<<PHP
+                
+    /**
+     * {$description}
+     * @return {$docReturnType}
+     */
+    public function {$methodName}(): {$phpReturnType} 
+    {
+        if (!isset(\$this->relations['{$field}'])) {
+            \$this->loadRelation('{$field}', {$field}::class);
+        }
+        
+        if (!isset(\$this->relations['{$field}'])) {
+            return [];
+        }
+        
+        return \$this->relations['{$field}']->{$methodName}();
+    }
+PHP;
+                }
+            }
+        }
+
+        return implode("\n", $methods);
+    }
+
+    private static function generateSaveMethod(): string {
+        return <<<PHP
+
+    public function save(): bool {
+        return parent::save();
+    }
+PHP;
+    }    public static function generateModelContent(string $entityName, array $fields, string $tableName, array $fillableFields): string {
         $header = self::generateFileHeader();
         $fieldsString = self::generateFieldsDocBlock($fields);
         $relationships = self::generateRelationshipMethods($fields);
         $finderMethods = self::generateFinderMethods($fields);
         $gettersAndSetters = self::generateGettersAndSetters($fields);
-        $fillableString = '[' . implode(', ', array_map(fn($f) => "'{$f}'", $fillableFields)) . ']';
+        $customMethods = self::generateCustomRelationshipMethods($fields);
+        $saveMethod = self::generateSaveMethod();
+        
+        // Add both camelCase and snake_case versions to fillable
+        $allFillableFields = [];
+        foreach ($fillableFields as $field) {
+            $allFillableFields[] = $field;
+            $allFillableFields[] = strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $field));
+        }
+        $fillableString = '[' . implode(', ', array_map(fn($f) => "'{$f}'", $allFillableFields)) . ']';
         
         // Add imports for related models
         $imports = ["use LorPHP\\Core\\Model;", "use LorPHP\\Interfaces\\{$entityName}Interface;"];
@@ -229,7 +397,9 @@ class {$entityName} extends Model implements {$entityName}Interface
                 
 {$finderMethods}
 {$relationships}
-{$gettersAndSetters}}
+{$gettersAndSetters}
+{$customMethods}
+{$saveMethod}}
 
 PHP;
     }

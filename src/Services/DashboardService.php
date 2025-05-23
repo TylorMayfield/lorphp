@@ -5,25 +5,49 @@ use LorPHP\Models\User;
 
 class DashboardService {
     public function getStats(User $user): array {
+        $organization = $user->getOrganization();
+        if (!$organization) {
+            return [
+                'totalClients' => 0,
+                'activeClients' => 0,
+                'recentContacts' => 0,
+                'organizationUsers' => 0,
+                'totalPackages' => 0
+            ];
+        }
+
+        $clients = $organization->clients();
+        $activeClients = array_filter($clients, fn($client) => $client->is_active);
+        $recentContacts = array_filter($clients, function($client) {
+            $lastContact = $client->last_contact_date ?? null;
+            if (!$lastContact) return false;
+            return strtotime($lastContact) >= strtotime('-7 days');
+        });
+
         return [
-            'totalClients' => count($user->getOrganizationClients()),
-            'activeClients' => count($user->getOrganizationClients(['status' => 'active'])),
-            'recentContacts' => count($user->getOrganizationClients([
-                'last_contact_date' => date('Y-m-d', strtotime('-7 days'))
-            ])),
-            'organizationUsers' => $user->getOrganization() ? 
-                count($user->getOrganization()->getUsers()) : 0,
-            'totalPackages' => count($user->getOrganizationPackages())
+            'totalClients' => count($clients),
+            'activeClients' => count($activeClients),
+            'recentContacts' => count($recentContacts),
+            'organizationUsers' => count($organization->users() ?? []),
+            'totalPackages' => count($organization->packages() ?? [])
         ];
     }
 
     public function getRecentContacts(User $user, int $limit = 5): array {
         $recentContacts = [];
-        foreach ($user->getOrganizationClients() as $client) {
-            $contacts = $client->getContacts();
-            foreach ($contacts as $contact) {
-                $contact['client_name'] = $client->name;
-                $recentContacts[] = $contact;
+        $organization = $user->getOrganization();
+        if (!$organization) {
+            return [];
+        }
+
+        foreach ($organization->clients() as $client) {
+            foreach ($client->contacts() as $contact) {
+                $recentContacts[] = [
+                    'id' => $contact->getId(),
+                    'contact_date' => $contact->created_at,
+                    'client_name' => $client->getName(),
+                    'notes' => $contact->notes ?? ''
+                ];
             }
         }
         
@@ -35,6 +59,16 @@ class DashboardService {
     }
 
     public function getRecentClients(User $user, int $limit = 5): array {
-        return $user->getOrganizationClients(['limit' => $limit]);
+        $organization = $user->getOrganization();
+        if (!$organization) {
+            return [];
+        }
+        
+        $clients = $organization->clients();
+        usort($clients, function($a, $b) {
+            return strtotime($b->created_at) - strtotime($a->created_at);
+        });
+        
+        return array_slice($clients, 0, $limit);
     }
 }

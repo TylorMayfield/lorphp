@@ -72,9 +72,8 @@ class SettingsController extends Controller {
         // Update user
         $user->name = $data['name'];
         $user->email = $data['email'];
-        
-        if (!empty($data['password'])) {
-            $user->setPassword($data['password']);
+          if (!empty($data['password'])) {
+            $user->setPassword($data['password']); // This uses the proper hashing method
         }
 
         if ($user->save()) {

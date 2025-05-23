@@ -5,22 +5,22 @@
       "attributes": ["@id", "@default(uuid())"],
       "description": "Unique identifier for the record"
     },
-    "createdAt": {
+    "created_at": {
       "type": "DateTime",
       "attributes": ["@default(now())"],
       "description": "Timestamp of when the record was created"
     },
-    "updatedAt": {
+    "updated_at": {
       "type": "DateTime",
       "attributes": ["@updatedAt"],
       "description": "Timestamp of when the record was last updated"
     },
-    "isActive": {
+    "is_active": {
       "type": "Boolean",
       "attributes": ["@default(true)"],
       "description": "Whether the record is active"
     },
-    "modifiedBy": {
+    "modified_by": {
       "type": "String",
       "nullable": true,
       "description": "Identifier of the user who last modified the record"
@@ -33,16 +33,40 @@
         "name": { "type": "String" },
         "email": { "type": "String", "attributes": ["@unique"] },
         "password": { "type": "String" },
-        "role": { "type": "String", "nullable": true },
+        "role_id": { "type": "String", "nullable": true },
+        "organization_id": { "type": "String", "isForeignKey": true },
+        "role": {
+          "type": "Role",
+          "relationship": "many-to-one",
+          "relationDetails": {
+            "fields": ["role_id"],
+            "references": ["id"]
+          },
+          "description": "The role of this user"
+        },        "organization": {
+          "type": "Organization",
+          "relationship": "many-to-one",
+          "relationDetails": {
+            "fields": ["organization_id"],
+            "references": ["id"]
+          },
+          "description": "The organization this user belongs to",
+          "methods": {
+            "getOrganizationClients": {
+              "returns": "Client[]",
+              "description": "Get all clients in the user's organization",
+              "filter": true
+            },
+            "getOrganizationPackages": {
+              "returns": "Package[]",
+              "description": "Get all packages in the user's organization"
+            }
+          }
+        },
         "clients": {
           "type": "Client",
           "relationship": "many-to-many",
           "description": "Clients associated with this user"
-        },
-        "organizations": {
-          "type": "Organization",
-          "relationship": "many-to-many",
-          "description": "Organizations this user belongs to"
         }
       },
       "useBakedInFields": true
@@ -78,15 +102,54 @@
       "description": "Represents an organization",
       "fields": {
         "name": { "type": "String" },
+        "is_active": {
+          "type": "Boolean",
+          "attributes": ["@default(true)"],
+          "description": "Whether the organization is active"
+        },
         "users": {
           "type": "User",
           "relationship": "one-to-many",
-          "description": "Users belonging to this organization"
+          "description": "Users belonging to this organization",
+          "relationDetails": {
+            "fields": ["organization_id"],
+            "references": ["id"]
+          }
         },
         "clients": {
           "type": "Client",
           "relationship": "one-to-many",
           "description": "Clients belonging to this organization"
+        }
+      },
+      "useBakedInFields": true
+    },
+    "Role": {
+      "description": "Represents a user role in the system",
+      "fields": {
+        "name": {
+          "type": "String",
+          "attributes": ["@unique"],
+          "description": "The name of the role"
+        },
+        "description": {
+          "type": "String",
+          "nullable": true,
+          "description": "Description of the role's purpose and permissions"
+        },
+        "permissions": {
+          "type": "Permission",
+          "relationship": "many-to-many",
+          "description": "Permissions associated with this role"
+        },
+        "users": {
+          "type": "User",
+          "relationship": "one-to-many",
+          "description": "Users with this role",
+          "relationDetails": {
+            "fields": ["role_id"],
+            "references": ["id"]
+          }
         }
       },
       "useBakedInFields": true
@@ -128,6 +191,62 @@
         }
       },
       "useBakedInFields": true
+    },
+    "RateLimit": {
+      "description": "Rate limiting records for API and sensitive endpoints",
+      "fields": {
+        "ipAddress": {
+          "type": "String",
+          "description": "IP address of the client"
+        },
+        "endpoint": {
+          "type": "String",
+          "description": "The endpoint being rate limited"
+        },
+        "requests": {
+          "type": "Integer",
+          "default": 1,
+          "description": "Number of requests in the current window"
+        },
+        "windowStart": {
+          "type": "DateTime",
+          "attributes": ["@default(now())"],
+          "description": "When this rate limit window started"
+        },
+        "windowDuration": {
+          "type": "Integer",
+          "default": 3600,
+          "description": "Duration of rate limit window in seconds"
+        },
+        "maxRequests": {
+          "type": "Integer",
+          "default": 1000,
+          "description": "Maximum number of requests allowed in window"
+        },
+        "userId": {
+          "type": "String",
+          "nullable": true,
+          "description": "Associated user if authenticated"
+        },
+        "blocked": {
+          "type": "Boolean",
+          "attributes": ["@default(false)"],
+          "description": "Whether requests are blocked for this IP/endpoint"
+        }
+      },
+      "useBakedInFields": true,
+      "indexes": [
+        {
+          "fields": ["ipAddress", "endpoint"],
+          "type": "unique",
+          "name": "idx_rate_limits_ip_endpoint"
+        },
+        {
+          "fields": ["windowStart"],
+          "type": "index",
+          "name": "idx_rate_limits_window"
+        }
+      ]
     }
   }
 }

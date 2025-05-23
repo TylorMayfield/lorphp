@@ -2,11 +2,11 @@
 namespace LorPHP\Core;
 
 class Schema {
-    protected $tableName;
-    protected $columnGroups = [
+    protected $tableName;    protected $columnGroups = [
         'primary' => [], // Primary key columns
         'regular' => [], // Regular columns
-        'constraints' => [] // Foreign keys, unique constraints, etc.
+        'constraints' => [], // Foreign keys, unique constraints, etc.
+        'columns' => [] // Tracking last added column for modifiers
     ];
     protected $isAlterTable = false;
     protected $alterCommands = [];
@@ -19,24 +19,22 @@ class Schema {
         $this->isAlterTable = true;
         return $this;
     }
-    
-    public function id($type = 'integer') {
+      public function id($type = 'integer') {
         if ($type === 'integer') {
             $this->columnGroups['primary'][] = "id INTEGER PRIMARY KEY AUTOINCREMENT";
         } else if ($type === 'uuid') {
             $this->columnGroups['primary'][] = "id TEXT PRIMARY KEY NOT NULL";
         }
-        return $this;
+        return $this->trackLastColumn('id');
     }
 
     public function uuid() {
         $this->columnGroups['primary'][] = "id TEXT PRIMARY KEY NOT NULL";
         return $this;
     }
-    
-    public function timestamps() {
-        $this->timestamp('created_at', 'CURRENT_TIMESTAMP');
-        $this->timestamp('updated_at', 'CURRENT_TIMESTAMP');
+      public function timestamps() {
+        $this->timestamp('created_at', 'CURRENT_TIMESTAMP')->trackLastColumn('created_at');
+        $this->timestamp('updated_at', 'CURRENT_TIMESTAMP')->trackLastColumn('updated_at');
         return $this;
     }
     
@@ -46,6 +44,7 @@ class Schema {
             return $this;
         }
         $this->columnGroups['regular'][] = "{$name} INTEGER" . ($nullable ? '' : ' NOT NULL');
+        $this->trackLastColumn($name);
         return $this;
     }
     
@@ -55,14 +54,14 @@ class Schema {
             return $this;
         }
         $this->columnGroups['regular'][] = "{$name} TEXT" . ($nullable ? '' : ' NOT NULL');
+        $this->trackLastColumn($name);
         return $this;
     }
     
     public function text($name, $nullable = false) {
         return $this->string($name, $nullable);
     }
-    
-    public function timestamp($name, $default = null, $nullable = false) {
+      public function timestamp($name, $default = null, $nullable = false) {
         $column = "{$name} DATETIME";
         if ($default) {
             $column .= " DEFAULT {$default}";
@@ -75,10 +74,9 @@ class Schema {
         } else {
             $this->columnGroups['regular'][] = $column;
         }
-        return $this;
+        return $this->trackLastColumn($name);
     }
-    
-    public function boolean($name, $nullable = false, $default = null) {
+      public function boolean($name, $nullable = false, $default = null) {
         $column = "{$name} INTEGER";
         if ($default !== null) {
             $column .= " DEFAULT " . ($default ? "1" : "0");
@@ -91,9 +89,13 @@ class Schema {
         } else {
             $this->columnGroups['regular'][] = $column;
         }
-        return $this;
+        return $this->trackLastColumn($name);
     }
-    
+
+    public function datetime($name, $default = null, $nullable = false) {
+        return $this->timestamp($name, $default, $nullable);
+    }
+
     public function decimal($name, $precision = 8, $scale = 2, $nullable = false) {
         $column = "{$name} DECIMAL({$precision},{$scale})" . ($nullable ? "" : " NOT NULL");
         if ($this->isAlterTable) {
@@ -101,7 +103,7 @@ class Schema {
         } else {
             $this->columnGroups['regular'][] = $column;
         }
-        return $this;
+        return $this->trackLastColumn($name);
     }
     
     public function default($value) {
@@ -149,9 +151,26 @@ class Schema {
         $this->columnGroups['constraints'][] = "FOREIGN KEY ({$column}) REFERENCES {$references}" . 
             ($onDelete ? " ON DELETE {$onDelete}" : "");
         return $this;
-    }
-    
-    public function unique($column) {
+    }    public function unique($column = null) {
+        if ($column === null) {
+            // When called as a column modifier, use the last added column
+            // Look in both primary and regular columns to find the last one
+            $columns = [];
+            foreach ($this->columnGroups['primary'] as $def) {
+                if (preg_match('/^(\w+)\s/', $def, $matches)) {
+                    $columns[] = $matches[1];
+                }
+            }
+            foreach ($this->columnGroups['regular'] as $def) {
+                if (preg_match('/^(\w+)\s/', $def, $matches)) {
+                    $columns[] = $matches[1];
+                }
+            }
+            if (empty($columns)) {
+                throw new \RuntimeException('No columns found to make unique');
+            }
+            $column = end($columns);
+        }
         if ($this->isAlterTable) {
             $this->alterCommands[] = "CREATE UNIQUE INDEX {$this->tableName}_{$column}_unique ON {$this->tableName} ({$column})";
         } else {
@@ -177,6 +196,11 @@ class Schema {
                 $this->columnGroups['regular'][$lastIdx] .= " AUTOINCREMENT";
             }
         }
+        return $this;
+    }
+    
+    protected function trackLastColumn($name) {
+        $this->columnGroups['columns'] = [$name => true];
         return $this;
     }
     

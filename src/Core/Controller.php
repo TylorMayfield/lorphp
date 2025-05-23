@@ -10,13 +10,14 @@ abstract class Controller {
         $this->app = Application::getInstance();
         $this->view = new View($this->app->getConfig('app.debug', false));
         $this->user = $this->app->getState('user');
-    }
-
-    protected function requireAuth() {
-        if (!AuthMiddleware::handle()) {
+    }    protected function requireAuth() {
+        AuthMiddleware::handle();
+        if (!$this->app->getState('user')) {
             header('Location: /login');
             exit;
         }
+        // Refresh user state after middleware runs
+        $this->user = $this->app->getState('user');
     }
 
     protected function redirectTo($path) {

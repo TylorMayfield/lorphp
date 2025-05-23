@@ -10,22 +10,24 @@
 namespace LorPHP\Interfaces;
 
 /**
- * Interface ClientInterface
- * Represents a client
+ * Interface RateLimitInterface
+ * Rate limiting records for API and sensitive endpoints
  *
  * @property String $id Unique identifier for the record
  * @property DateTime $created_at Timestamp of when the record was created
  * @property DateTime $updated_at Timestamp of when the record was last updated
  * @property Boolean $is_active Whether the record is active
  * @property String|null $modified_by Identifier of the user who last modified the record
- * @property String $name Name
- * @property String $email Email
- * @property String $organizationId OrganizationId
- * @property Organization $organization Organization
- * @property Contact $contacts Contacts for this client
- * @property Package $packages Packages associated with this client
+ * @property String $ipAddress IP address of the client
+ * @property String $endpoint The endpoint being rate limited
+ * @property Integer $requests Number of requests in the current window
+ * @property DateTime $windowStart When this rate limit window started
+ * @property Integer $windowDuration Duration of rate limit window in seconds
+ * @property Integer $maxRequests Maximum number of requests allowed in window
+ * @property String|null $userId Associated user if authenticated
+ * @property Boolean $blocked Whether requests are blocked for this IP/endpoint
  */
-interface ClientInterface
+interface RateLimitInterface
 {
     /**
      * Get the id
@@ -93,99 +95,107 @@ interface ClientInterface
     public function setModified_by($modified_by): void;
 
     /**
-     * Get the name
+     * Get the ipAddress
      * @return String
      */
-    public function getName();
+    public function getIpAddress();
 
     /**
-     * Set the name
-     * @param String $name
+     * Set the ipAddress
+     * @param String $ipAddress
      * @return void
      */
-    public function setName($name): void;
+    public function setIpAddress($ipAddress): void;
 
     /**
-     * Get the email
+     * Get the endpoint
      * @return String
      */
-    public function getEmail();
+    public function getEndpoint();
 
     /**
-     * Set the email
-     * @param String $email
+     * Set the endpoint
+     * @param String $endpoint
      * @return void
      */
-    public function setEmail($email): void;
+    public function setEndpoint($endpoint): void;
 
     /**
-     * Get the organizationId
-     * @return String
+     * Get the requests
+     * @return Integer
      */
-    public function getOrganizationId();
+    public function getRequests();
 
     /**
-     * Set the organizationId
-     * @param String $organizationId
+     * Set the requests
+     * @param Integer $requests
      * @return void
      */
-    public function setOrganizationId($organizationId): void;
+    public function setRequests($requests): void;
 
     /**
-     * Get the organization
-     * @return Organization
+     * Get the windowStart
+     * @return DateTime
      */
-    public function getOrganization();
+    public function getWindowStart();
 
     /**
-     * Set the organization
-     * @param Organization $organization
+     * Set the windowStart
+     * @param DateTime $windowStart
      * @return void
      */
-    public function setOrganization($organization): void;
+    public function setWindowStart($windowStart): void;
 
     /**
-     * Get the contacts
-     * @return Contact
+     * Get the windowDuration
+     * @return Integer
      */
-    public function getContacts();
+    public function getWindowDuration();
 
     /**
-     * Set the contacts
-     * @param Contact $contacts
+     * Set the windowDuration
+     * @param Integer $windowDuration
      * @return void
      */
-    public function setContacts($contacts): void;
+    public function setWindowDuration($windowDuration): void;
 
     /**
-     * Get the packages
-     * @return Package
+     * Get the maxRequests
+     * @return Integer
      */
-    public function getPackages();
+    public function getMaxRequests();
 
     /**
-     * Set the packages
-     * @param Package $packages
+     * Set the maxRequests
+     * @param Integer $maxRequests
      * @return void
      */
-    public function setPackages($packages): void;
+    public function setMaxRequests($maxRequests): void;
 
     /**
-     * Get related organization
-     * @return Organization
+     * Get the userId
+     * @return String|null
      */
-    public function organization();
+    public function getUserId();
 
     /**
-     * Get related contacts
-     * @return Contact[]
+     * Set the userId
+     * @param String|null $userId
+     * @return void
      */
-    public function contacts();
+    public function setUserId($userId): void;
 
     /**
-     * Get related packages
-     * @return Package[]
+     * Get the blocked
+     * @return Boolean
      */
-    public function packages();
+    public function getBlocked();
+
+    /**
+     * Set the blocked
+     * @param Boolean $blocked
+     * @return void
+     */
+    public function setBlocked($blocked): void;
 
 }

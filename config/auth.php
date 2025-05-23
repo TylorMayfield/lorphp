@@ -3,6 +3,8 @@
 return [
     // General settings
     'app_name' => 'LorPHP',
+    // Default role for new users (by name)
+    'default_role' => 'user',
     
     // Routes
     'routes' => [
@@ -69,3 +71,9 @@ return [
         ]
     ]
 ];
+
+/**
+ * To add more roles:
+ * 1. Add a new entry to the RoleSeeder in database/seeders/RoleSeeder.php.
+ * 2. Optionally, set 'default_role' above to the new role name for new users.
+ */

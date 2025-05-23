@@ -25,6 +25,54 @@ class LoginController extends Controller
     }
     
     /**
+     * Generate a JWT token for a user
+     * @param array $userData User data to encode in the token
+     * @return string The generated JWT token
+     */
+    protected function generateJWT(User $user): string 
+    {
+        $config = $this->config['jwt'] ?? [];
+        $secret = $config['secret'] ?? $_ENV['JWT_SECRET'] ?? 'your-256-bit-secret';
+        $expiration = $config['expiration'] ?? 72; // Default to 72 hours
+        
+        $header = json_encode(['typ' => 'JWT', 'alg' => 'HS256']);
+        
+        $payload = json_encode([
+            'sub' => $user->getId(),
+            'name' => $user->getName(),
+            'email' => $user->getEmail(),
+            'role' => $user->getRole(),
+            'org' => $user->getOrganization_id(),
+            'iat' => time(),
+            'exp' => time() + ($expiration * 60 * 60)
+        ]);
+        
+        $base64UrlHeader = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($header));
+        $base64UrlPayload = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($payload));
+        
+        $signature = hash_hmac('sha256', 
+            $base64UrlHeader . "." . $base64UrlPayload, 
+            $secret,
+            true
+        );
+        
+        $base64UrlSignature = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($signature));
+        
+        return $base64UrlHeader . "." . $base64UrlPayload . "." . $base64UrlSignature;
+    }
+
+    /**
+     * Verify if the provided password matches the stored hash
+     * @param string $hashedPassword The stored password hash
+     * @param string $password The password to verify
+     * @return bool True if password matches, false otherwise
+     */
+    protected function verifyPassword(string $hashedPassword, string $password): bool
+    {
+        return password_verify($password, $hashedPassword);
+    }
+
+    /**
      * Display login page or process login form submission
      */
     public function index() 
@@ -41,13 +89,11 @@ class LoginController extends Controller
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($form->validate()) {
                 $data = $form->getData();
-                
-                try {
+                  try {
                     $user = User::findByEmail($data['email']);
-                    
-                    if ($user && $user->verifyPassword($data['password'])) {
+                    if ($user && AuthController::verifyPassword($data['password'], $user->getPassword())) {
                         // Generate and set JWT token
-                        $token = $user->generateJWT();
+                        $token = $this->generateJWT($user);
                         setcookie('jwt', $token, [
                             'expires' => time() + (60 * 60 * 72), // 72 hours
                             'path' => '/',
@@ -55,6 +101,12 @@ class LoginController extends Controller
                             'samesite' => 'Strict',
                             'secure' => isset($_SERVER['HTTPS'])
                         ]);
+                        
+                        // Start session and store user ID
+                        if (session_status() === PHP_SESSION_NONE) {
+                            session_start();
+                        }
+                        $_SESSION['user_id'] = $user->getId();
                         
                         $this->app->setState('user', $user);
                         return $this->redirectTo($this->config['routes']['login_redirect'] ?? '/dashboard');

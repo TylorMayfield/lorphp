@@ -81,4 +81,25 @@ class AuthController extends Controller
     {
         return $this->app->getState('user');
     }
+
+    /**
+     * Hash a password using bcrypt
+     * @param string $password The plain text password to hash
+     * @return string The hashed password
+     */
+    public static function hashPassword(string $password): string 
+    {
+        return password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]);
+    }
+
+    /**
+     * Verify if a password matches its hash
+     * @param string $password The plain text password to verify
+     * @param string $hash The hashed password to check against
+     * @return bool True if password matches, false otherwise
+     */
+    public static function verifyPassword(string $password, string $hash): bool 
+    {
+        return password_verify($password, $hash);
+    }
 }

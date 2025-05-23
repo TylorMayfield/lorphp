@@ -4,6 +4,7 @@ namespace LorPHP\Controllers;
 use LorPHP\Core\Controller;
 use LorPHP\Core\Database;
 use LorPHP\Models\User;
+use LorPHP\Models\Role;
 
 /**
  * Controller for handling user registration functionality
@@ -36,6 +37,11 @@ class RegisterController extends Controller
 
         // Load the auth config
         $config = $this->config;
+        // Get default role name from config
+        $defaultRoleName = $config['default_role'] ?? 'user';
+        // Find the default role by name (should exist from seeder)
+        $defaultRole = Role::findByName($defaultRoleName);
+        $defaultRoleId = $defaultRole ? $defaultRole->id : null;
         
         // Initialize form with validation rules from config
         $form = \LorPHP\Core\FormBuilder::createRegistrationForm();
@@ -46,10 +52,10 @@ class RegisterController extends Controller
             if ($form->validate()) {
                 $data = $form->getData();
                 
-                try {
-                    // Create organization first
+                try {                    // Create organization first
                     $organization = new \LorPHP\Models\Organization();
                     $organization->name = $data['name'] . "'s Organization";
+                    $organization->is_active = true; // Set is_active explicitly
                     if (!$organization->save()) {
                         throw new \Exception("Failed to create organization");
                     }
@@ -59,7 +65,9 @@ class RegisterController extends Controller
                     $user->organization_id = $organization->id;
                     $user->name = $data['name'];
                     $user->email = $data['email'];
-                    $user->setPassword($data['password']);
+                    $user->role_id = $defaultRoleId; // Assign UUID of default role
+                    $user->is_active = true;
+                    $user->password = AuthController::hashPassword($data['password']);
                     
                     if ($user->save()) {
                         $this->app->setState('user', $user);
@@ -146,10 +154,17 @@ class RegisterController extends Controller
             ]);
         }
 
+
+        // Get default role name from config
+        $defaultRoleName = $this->config['default_role'] ?? 'user';
+        $defaultRole = Role::findByName($defaultRoleName);
+        $defaultRoleId = $defaultRole ? $defaultRole->id : null;
+
         // Create user
         $user = new User();
         $user->name = $formData['name'];
         $user->email = $formData['email'];
+        $user->role_id = $defaultRoleId;
         $user->setPassword($formData['password']);
 
         try {

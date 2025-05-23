@@ -11,13 +11,10 @@ class DashboardController extends Controller {
         parent::__construct();
         $this->requireAuth();
         $this->dashboardService = new DashboardService();
-    }
-
-    public function index() {
+    }    public function index() {
         // Redirect admin users to admin dashboard
-        if ($this->user && $this->user->role === 'admin') {
-            header('Location: /admin');
-            exit;
+        if ($this->user && $this->user->getRole() === 'admin') {
+            return $this->redirectTo('/admin');
         }
 
         // Use $this->user which is set in the parent Controller class

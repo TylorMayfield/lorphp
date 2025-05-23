@@ -213,13 +213,13 @@ abstract class Model {
             $db->rollBack();
             return false;
         }
-    }
-
-    protected function getModifiedAttributes(): array {
+    }    protected function getModifiedAttributes(): array {
         $attributes = [];
         foreach ($this->attributes as $key => $value) {
+            // Convert camelCase to snake_case for database columns
+            $dbKey = strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $key));
             if (!$this->exists || in_array($key, $this->dirty)) {
-                $attributes[$key] = $value;
+                $attributes[$dbKey] = $value;
             }
         }
         return $attributes;
@@ -279,11 +279,9 @@ abstract class Model {
         }
         
         return $results;
-    }
-
-    protected function belongsTo(string $class, ?string $foreignKey = null): ?Model {
+    }    protected function belongsTo(string $class, ?string $foreignKey = null): ?Model {
         if (!$foreignKey) {
-            $foreignKey = strtolower(class_basename($class)) . '_id';
+            $foreignKey = strtolower(self::class_basename($class)) . '_id';
         }
         
         $foreignId = $this->attributes[$foreignKey] ?? null;
@@ -335,19 +333,17 @@ abstract class Model {
         }
         
         return $results;
-    }
-
-    public function fill(array $attributes): void {
+    }    public function fill(array $attributes): void {
         foreach ($attributes as $key => $value) {
-            if (in_array($key, static::$fillable)) {
-                $this->attributes[$key] = $value;
+            // Convert snake_case to camelCase for model properties
+            $modelKey = lcfirst(str_replace('_', '', ucwords($key, '_')));
+            if (in_array($modelKey, static::$fillable)) {
+                $this->attributes[$modelKey] = $value;
             }
         }
         $this->exists = true;
-    }
-
-    // Helper method to get class basename
-    private static function class_basename($class): string {
+    }    // Helper method to get class basename
+    protected static function class_basename($class): string {
         $class = is_object($class) ? get_class($class) : $class;
         return basename(str_replace('\\', '/', $class));
     }

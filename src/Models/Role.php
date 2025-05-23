@@ -10,13 +10,13 @@
 namespace LorPHP\Models;
 
 use LorPHP\Core\Model;
-use LorPHP\Interfaces\OrganizationInterface;
+use LorPHP\Interfaces\RoleInterface;
+use LorPHP\Models\Permission;
 use LorPHP\Models\User;
-use LorPHP\Models\Client;
 
 /**
- * Class Organization
- * Represents the Organization entity.
+ * Class Role
+ * Represents the Role entity.
  *
  * @property string $id
  * @property string $created_at
@@ -24,13 +24,51 @@ use LorPHP\Models\Client;
  * @property bool $is_active
  * @property string $modified_by
  * @property string $name
+ * @property string $description
  */
-class Organization extends Model implements OrganizationInterface
+class Role extends Model implements RoleInterface
 {
-    protected static string $tableName = 'organizations';
-    protected static $fillable = ['id', 'id', 'created_at', 'created_at', 'updated_at', 'updated_at', 'is_active', 'is_active', 'modified_by', 'modified_by', 'name', 'name', 'users', 'users', 'clients', 'clients'];
+    protected static string $tableName = 'roles';
+    protected static $fillable = ['id', 'id', 'created_at', 'created_at', 'updated_at', 'updated_at', 'is_active', 'is_active', 'modified_by', 'modified_by', 'name', 'name', 'description', 'description', 'permissions', 'permissions', 'users', 'users'];
                 
+                
+    /**
+     * Find a record by its name
+     * @param string $name The name to search for
+     * @return static|null The record if found, null otherwise
+     */
+    public static function findByName(string $name): ?static
+    {
+        $db = \LorPHP\Core\Database::getInstance();
+        $data = $db->findOne(static::$tableName, ['name' => $name]);
+        
+        if ($data) {
+            $model = new static();
+            $model->fill($data);
+            return $model;
+        }
+        
+        return null;
+    }
+                
+    /**
+     * Get related permissions
+     * @return Permission[]
+     */
+    public function permissions()
+    {
+        return $this->manyToMany(Permission::class);
+    }
+                
+    public function getPermissions()
+    {
+        return $this->permissions();
+    }
 
+    public function setPermissions($permissions): void
+    {
+        $this->permissions = $permissions;
+    }
                 
     /**
      * Get related users
@@ -49,25 +87,6 @@ class Organization extends Model implements OrganizationInterface
     public function setUsers($users): void
     {
         $this->users = $users;
-    }
-                
-    /**
-     * Get related clients
-     * @return Client[]
-     */
-    public function clients()
-    {
-        return $this->hasMany(Client::class);
-    }
-                
-    public function getClients()
-    {
-        return $this->clients();
-    }
-
-    public function setClients($clients): void
-    {
-        $this->clients = $clients;
     }
                 
     public function getId()
@@ -128,6 +147,16 @@ class Organization extends Model implements OrganizationInterface
     public function setName($name): void
     {
         $this->name = $name;
+    }
+                
+    public function getDescription()
+    {
+        return $this->description;
+    }
+
+    public function setDescription($description): void
+    {
+        $this->description = $description;
     }
 
 

@@ -13,15 +13,17 @@ class CreateUserTable extends Migration
     public function up()
     {
         $this->createTable('users', function(Schema $table) {
-            $table->uuid();
-            $table->timestamp('createdAt');
-            $table->timestamp('updatedAt');
-            $table->boolean('isActive');
-            $table->string('modifiedBy')->nullable();
+            $table->string('id');
+            $table->timestamp('created_at');
+            $table->timestamp('updated_at');
+            $table->boolean('is_active');
+            $table->string('modified_by')->nullable();
             $table->string('name');
-            $table->string('email')->unique();
+            $table->string('email');
+            $table->unique('email');
             $table->string('password');
-            $table->string('role')->nullable();
+            $table->string('role_id')->nullable();
+            $table->string('organization_id');
 
         });
     }

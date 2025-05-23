@@ -10,22 +10,20 @@
 namespace LorPHP\Interfaces;
 
 /**
- * Interface ClientInterface
- * Represents a client
+ * Interface RoleInterface
+ * Represents a user role in the system
  *
  * @property String $id Unique identifier for the record
  * @property DateTime $created_at Timestamp of when the record was created
  * @property DateTime $updated_at Timestamp of when the record was last updated
  * @property Boolean $is_active Whether the record is active
  * @property String|null $modified_by Identifier of the user who last modified the record
- * @property String $name Name
- * @property String $email Email
- * @property String $organizationId OrganizationId
- * @property Organization $organization Organization
- * @property Contact $contacts Contacts for this client
- * @property Package $packages Packages associated with this client
+ * @property String $name The name of the role
+ * @property String|null $description Description of the role's purpose and permissions
+ * @property Permission $permissions Permissions associated with this role
+ * @property User $users Users with this role
  */
-interface ClientInterface
+interface RoleInterface
 {
     /**
      * Get the id
@@ -106,86 +104,54 @@ interface ClientInterface
     public function setName($name): void;
 
     /**
-     * Get the email
-     * @return String
+     * Get the description
+     * @return String|null
      */
-    public function getEmail();
+    public function getDescription();
 
     /**
-     * Set the email
-     * @param String $email
+     * Set the description
+     * @param String|null $description
      * @return void
      */
-    public function setEmail($email): void;
+    public function setDescription($description): void;
 
     /**
-     * Get the organizationId
-     * @return String
+     * Get the permissions
+     * @return Permission
      */
-    public function getOrganizationId();
+    public function getPermissions();
 
     /**
-     * Set the organizationId
-     * @param String $organizationId
+     * Set the permissions
+     * @param Permission $permissions
      * @return void
      */
-    public function setOrganizationId($organizationId): void;
+    public function setPermissions($permissions): void;
 
     /**
-     * Get the organization
-     * @return Organization
+     * Get the users
+     * @return User
      */
-    public function getOrganization();
+    public function getUsers();
 
     /**
-     * Set the organization
-     * @param Organization $organization
+     * Set the users
+     * @param User $users
      * @return void
      */
-    public function setOrganization($organization): void;
+    public function setUsers($users): void;
 
     /**
-     * Get the contacts
-     * @return Contact
+     * Get related permissions
+     * @return Permission[]
      */
-    public function getContacts();
+    public function permissions();
 
     /**
-     * Set the contacts
-     * @param Contact $contacts
-     * @return void
+     * Get related users
+     * @return User[]
      */
-    public function setContacts($contacts): void;
-
-    /**
-     * Get the packages
-     * @return Package
-     */
-    public function getPackages();
-
-    /**
-     * Set the packages
-     * @param Package $packages
-     * @return void
-     */
-    public function setPackages($packages): void;
-
-    /**
-     * Get related organization
-     * @return Organization
-     */
-    public function organization();
-
-    /**
-     * Get related contacts
-     * @return Contact[]
-     */
-    public function contacts();
-
-    /**
-     * Get related packages
-     * @return Package[]
-     */
-    public function packages();
+    public function users();
 
 }

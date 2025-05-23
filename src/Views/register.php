@@ -31,12 +31,13 @@ $this->setLayout('base');
         </div>
 
         <?php if (isset($form)): ?>
-            <div class="mt-8 relative">
-                <?php
+            <div class="mt-8 relative">                <?php
                 // Display any form errors using our new error component
                 $formErrors = $form->getErrors();
                 if (!empty($formErrors)): 
                     $error = $formErrors['form'] ?? reset($formErrors);
+                    // Handle both string and array error formats
+                    $errorMessage = is_array($error) ? $error['message'] : $error;
                 ?>
                     <div class="rounded-xl bg-red-500/10 border border-red-500/20 p-4 mb-6">
                         <div class="flex items-start">
@@ -46,7 +47,7 @@ $this->setLayout('base');
                                 </svg>
                             </div>
                             <div class="ml-3">
-                                <p class="text-sm text-red-400"><?php echo htmlspecialchars($error); ?></p>
+                                <p class="text-sm text-red-400"><?php echo htmlspecialchars($errorMessage); ?></p>
                             </div>
                         </div>
                     </div>

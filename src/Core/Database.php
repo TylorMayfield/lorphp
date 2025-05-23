@@ -93,10 +93,9 @@ class Database {
                 // Extract the part after timestamp prefix
                 $baseName = preg_replace('/^\d{8}_\d{6}_/', '', $baseName);
                 // Convert snake_case to CamelCase for the class name
-                $className = str_replace(' ', '', ucwords(str_replace('_', ' ', $baseName)));
-                $fullClassName = 'LorPHP\\Database\\Migrations\\' . $className;
+                $className = str_replace(' ', '', ucwords(str_replace('_', ' ', $baseName)));                $fullClassName = 'LorPHP\\Database\\Migrations\\' . $className;
                 
-                $migration = new $className();
+                $migration = new $fullClassName();
                 
                 $this->pdo->beginTransaction();
                 try {

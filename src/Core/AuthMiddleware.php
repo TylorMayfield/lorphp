@@ -28,12 +28,11 @@ class AuthMiddleware {
 
             // Create admin user
             $user = new \LorPHP\Models\User();
-            $user->name = $adminConfig['name'];
-            $user->email = $adminConfig['email'];
-            $user->setPassword($adminConfig['password']);
+            $user->name = $adminConfig['name'];            $user->email = $adminConfig['email'];
+            $user->password = \LorPHP\Controllers\AuthController::hashPassword($adminConfig['password']);
             $user->role_id = self::ADMIN_ROLE_ID;
             $user->organization_id = $org->id;
-            $user->active = 1;
+            $user->is_active = 1;
             $user->save();
         } else {
             // Ensure existing admin has the correct role
@@ -44,6 +43,46 @@ class AuthMiddleware {
                 );
             }
         }
+    }
+
+    /**
+     * Validate JWT token
+     * @param string $token
+     * @return array|false Decoded token payload or false if invalid
+     */
+    private static function validateToken(string $token) {
+        $app = Application::getInstance();
+        $secret = $app->getConfig('auth.jwt.secret') ?? $_ENV['JWT_SECRET'] ?? 'your-256-bit-secret';
+        
+        $parts = explode('.', $token);
+        if (count($parts) !== 3) {
+            return false;
+        }
+        
+        list($header, $payload, $signature) = $parts;
+        
+        // Verify signature
+        $valid = hash_hmac('sha256', 
+            $header . "." . $payload, 
+            $secret,
+            true
+        );
+        
+        $valid = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($valid));
+        
+        if (!hash_equals($signature, $valid)) {
+            return false;
+        }
+        
+        // Decode payload
+        $payload = json_decode(base64_decode(str_replace(['-', '_'], ['+', '/'], $payload)), true);
+        
+        // Check expiration
+        if (!isset($payload['exp']) || $payload['exp'] < time()) {
+            return false;
+        }
+        
+        return $payload;
     }
 
     /**
@@ -59,19 +98,37 @@ class AuthMiddleware {
         }
 
         // Check if user is logged in
-        if (isset($_SESSION['user_id'])) {
-            $db = Database::getInstance();
-            $user = $db->findOne('users', ['id' => $_SESSION['user_id'], 'active' => 1]);
+        if (isset($_SESSION['user_id'])) {            $db = Database::getInstance();
+            $user = $db->findOne('users', ['id' => $_SESSION['user_id'], 'is_active' => 1]);
             
             if ($user) {
                 // Create User model instance and set it in application state
                 $userModel = new User();
                 $userModel->fill($user);
                 $app->setState('user', $userModel);
+
+                // Validate JWT token if present
+                if (isset($_COOKIE['jwt'])) {
+                    $token = $_COOKIE['jwt'];
+                    $jwt = self::validateToken($token);
+                    if (!$jwt || $jwt['sub'] !== $user['id']) {
+                        self::clearToken();
+                        unset($_SESSION['user_id']);
+                        $app->setState('user', null);
+                        header('Location: /login');
+                        exit;
+                    }
+                }
             } else {
                 // Invalid user ID in session, clear it
                 unset($_SESSION['user_id']);
                 $app->setState('user', null);
+                
+                // Redirect to login
+                if (!in_array($_SERVER['REQUEST_URI'], ['/login', '/register'])) {
+                    header('Location: /login');
+                    exit;
+                }
             }
         } else {
             $app->setState('user', null);

@@ -8,27 +8,25 @@ namespace LorPHP\Database\Migrations;
 use LorPHP\Core\Migration;
 use LorPHP\Core\Schema;
 
-class CreateUserTable extends Migration
+class CreateRoleTable extends Migration
 {
     public function up()
     {
-        $this->createTable('users', function(Schema $table) {
+        $this->createTable('roles', function(Schema $table) {
             $table->string('id');
             $table->timestamp('created_at');
             $table->timestamp('updated_at');
             $table->boolean('is_active');
             $table->string('modified_by')->nullable();
             $table->string('name');
-            $table->string('email');
-            $table->unique('email');
-            $table->string('password');
-            $table->string('role')->nullable();
+            $table->unique('name');
+            $table->string('description')->nullable();
 
         });
     }
 
     public function down()
     {
-        $this->dropTable('users');
+        $this->dropTable('roles');
     }
 }
