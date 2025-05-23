@@ -35,7 +35,7 @@
   "devDependencies": {
     "@testing-library/cypress": "^10.0.1",
     "cypress": "^13.6.0",
-    "start-server-and-test": "^2.0.3"
+    "start-server-and-test": "^2.0.12"
   },
   "dependencies": {
     "sharp": "^0.34.1"
