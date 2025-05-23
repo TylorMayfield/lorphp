@@ -1,7 +1,8 @@
 FROM php:8.2-cli-alpine
 
-# Install PHP extensions
-RUN docker-php-ext-install pdo pdo_sqlite
+# Install system dependencies and PHP extensions
+RUN apk add --no-cache sqlite-dev \
+    && docker-php-ext-install pdo pdo_sqlite
 
 # Set working directory
 WORKDIR /var/www/html
