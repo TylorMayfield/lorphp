@@ -58,7 +58,7 @@ class User extends Model implements UserInterface
     /**
      * Get related role
      * @return Role[]
-     */    public function role(): ?Model
+     */    public function role(): ?\LorPHP\Core\Model
     {
         return $this->belongsTo(Role::class);
     }
@@ -76,7 +76,7 @@ class User extends Model implements UserInterface
     /**
      * Get related organization
      * @return Organization[]
-     */    public function organization(): ?Model
+     */    public function organization(): ?\LorPHP\Core\Model
     {
         return $this->belongsTo(Organization::class);
     }
@@ -216,7 +216,7 @@ class User extends Model implements UserInterface
      */    public function getOrganizationClients(array $filters = []): array
     {
         if (!isset($this->relations['organization'])) {
-            $this->loadRelation('organization', organization::class);
+            $this->loadRelation('organization', Organization::class, 'organization_id');
         }
         
         if (!isset($this->relations['organization'])) {
@@ -245,7 +245,7 @@ class User extends Model implements UserInterface
      */    public function getOrganizationPackages(): array
     {
         if (!isset($this->relations['organization'])) {
-            $this->loadRelation('organization', organization::class);
+            $this->loadRelation('organization', Organization::class, 'organization_id');
         }
         
         if (!isset($this->relations['organization'])) {

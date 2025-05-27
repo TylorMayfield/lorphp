@@ -158,52 +158,9 @@ PHP;
 
 PHP;
     }    private static function generateRelationshipMethods(array $fields): string {
-        $methods = [];
+        $methods = array();
         
         foreach ($fields as $field => $details) {
-            // Generate custom methods defined in the schema
-            if (isset($details['methods'])) {
-                foreach ($details['methods'] as $methodName => $methodDetails) {
-                    $returnType = $methodDetails['returns'];
-                    // Convert array notation to PHP return type                    $phpReturnType = 'array';
-                    if (str_ends_with($returnType, '[]')) {
-                        $itemType = substr($returnType, 0, -2);
-                        $docReturnType = "$itemType[]";
-                    } else {
-                        $docReturnType = $returnType;
-                        $phpReturnType = str_ends_with($returnType, '[]') ? 'array' : $returnType;
-                    }
-                    
-                    $filterParam = '';
-                    $filterDoc = '';
-                    if (isset($methodDetails['filter']) && $methodDetails['filter']) {
-                        $filterParam = 'array $filters = []';
-                        $filterDoc = "@param array \$filters Optional filters to apply\n     * ";
-                    }
-                    
-                    $methods[] = <<<PHP
-                
-    /**
-     * {$methodDetails['description']}
-     * {$filterDoc}@return {$docReturnType}
-     */
-    public function {$methodName}($filterParam): {$phpReturnType} 
-    {
-        if (!isset(\$this->relations['{$field}'])) {
-            \$this->loadRelation('{$field}', {$field}::class);
-        }
-        
-        if (!isset(\$this->relations['{$field}'])) {
-            return [];
-        }
-        
-        \$items = \$this->relations['{$field}']->{$methodName}();
-        return \$items;
-    }
-PHP;
-                }
-            }
-
             if (!isset($details['relationship'])) {
                 continue;
             }
@@ -213,29 +170,30 @@ PHP;
             $methodName = ucfirst($field);
             
             // Create the relationship method that will be called by the magic getter
-            $relationshipType = match($relationship) {
-                'many-to-many' => 'manyToMany',
-                'one-to-many' => 'hasMany',
-                'many-to-one' => 'belongsTo',
-                'one-to-one' => 'hasOne',
-                default => 'hasOne'
-            };
+            $relationshipType = 'array';
+            $methodImpl = 'hasOne';
+            
+            if ($relationship === 'many-to-many' || $relationship === 'one-to-many') {
+                $relationshipType = 'array';
+                $methodImpl = $relationship === 'many-to-many' ? 'manyToMany' : 'hasMany';
+            } else {
+                $relationshipType = '?\\LorPHP\\Core\\Model';
+                $methodImpl = $relationship === 'many-to-one' ? 'belongsTo' : 'hasOne';
+            }
 
-            // Add magic property getter
-            $methods[] = <<<PHP
+            $docBlock = str_replace('[]', '', $type); // Remove array notation for PHPDoc
+            
+            // Add magic property getter with proper return type
+            $methods[] = <<<EOD
                 
     /**
      * Get related {$field}
-     * @return {$type}[]
+     * @return {$docBlock}[]
      */
-    public function {$field}()
+    public function {$field}(): {$relationshipType}
     {
-        return \$this->{$relationshipType}({$type}::class);
+        return \$this->{$methodImpl}({$type}::class);
     }
-PHP;
-
-            // Add normal getter/setter methods
-            $methods[] = <<<PHP
                 
     public function get{$methodName}()
     {
@@ -246,7 +204,7 @@ PHP;
     {
         \$this->{$field} = \${$field};
     }
-PHP;
+EOD;
         }
 
         return implode("\n", $methods);

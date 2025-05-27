@@ -35,8 +35,7 @@ class Organization extends Model implements OrganizationInterface
     /**
      * Get related users
      * @return User[]
-     */
-    public function users()
+     */    public function users(): array
     {
         return $this->hasMany(User::class);
     }
@@ -54,8 +53,7 @@ class Organization extends Model implements OrganizationInterface
     /**
      * Get related clients
      * @return Client[]
-     */
-    public function clients()
+     */    public function clients(): array
     {
         return $this->hasMany(Client::class);
     }
