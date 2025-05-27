@@ -113,24 +113,25 @@ class View {
             ob_end_clean();
             throw $e;
         }
-    }
-
-    private function findView($view) {
+    }    private function findView($view) {
         $view = str_replace('.', '/', $view);
-        $path = __DIR__ . "/../Views/{$view}.php";
         
-        if (!file_exists($path)) {
-            return false;
+        // Possible locations to search for views
+        $searchPaths = [
+            __DIR__ . "/../Views/{$view}.php",
+            __DIR__ . "/../Views/components/{$view}.php",
+            __DIR__ . "/../Views/partials/{$view}.php",
+            __DIR__ . "/../Views/dashboard/{$view}.php"
+        ];
+        
+        foreach ($searchPaths as $path) {
+            if (file_exists($path)) {
+                return $path;
+            }
         }
         
-        return $path;
-    }
-
-    public function partial($name, $data = []) {
-        if (strpos($name, 'partials/') !== 0) {
-            $name = "partials/{$name}";
-        }
-        
+        return false;
+    }    public function partial($name, $data = []) {
         try {
             // Start buffer for partial
             ob_start();
@@ -155,13 +156,7 @@ class View {
             ob_end_clean();
             throw $e;
         }
-    }
-
-    public function renderPartialToString($name, $data = []) {
-        if (strpos($name, 'partials/') !== 0) {
-            $name = "partials/{$name}";
-        }
-        
+    }    public function renderPartialToString($name, $data = []) {
         $partialPath = $this->findView($name);
         if (!$partialPath) {
             throw new \Exception("Partial not found: {$name}");

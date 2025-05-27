@@ -43,7 +43,8 @@
             "references": ["id"]
           },
           "description": "The role of this user"
-        },        "organization": {
+        },
+        "organization": {
           "type": "Organization",
           "relationship": "many-to-one",
           "relationDetails": {

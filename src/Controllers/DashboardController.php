@@ -11,7 +11,9 @@ class DashboardController extends Controller {
         parent::__construct();
         $this->requireAuth();
         $this->dashboardService = new DashboardService();
-    }    public function index() {
+    }    
+    
+    public function index() {
         // Redirect admin users to admin dashboard
         if ($this->user && $this->user->getRole() === 'admin') {
             return $this->redirectTo('/admin');
@@ -21,12 +23,14 @@ class DashboardController extends Controller {
         $stats = $this->dashboardService->getStats($this->user);
         $recentClients = $this->dashboardService->getRecentClients($this->user);
         $recentContacts = $this->dashboardService->getRecentContacts($this->user);
+        $recentPackages = $this->dashboardService->getRecentPackages($this->user);
         
         return $this->view('dashboard', [
             'title' => 'Dashboard - LorPHP',
             'stats' => $stats,
             'recentClients' => $recentClients,
-            'recentContacts' => $recentContacts
+            'recentContacts' => $recentContacts,
+            'recentPackages' => $recentPackages
         ]);
     }
 }

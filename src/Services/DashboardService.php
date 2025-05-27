@@ -2,6 +2,7 @@
 namespace LorPHP\Services;
 
 use LorPHP\Models\User;
+use LorPHP\Core\Database;
 
 class DashboardService {
     public function getStats(User $user): array {
@@ -70,5 +71,18 @@ class DashboardService {
         });
         
         return array_slice($clients, 0, $limit);
+    }
+
+    public function getRecentPackages(User $user, int $limit = 5): array {
+        $organization = $user->getOrganization();
+        if (!$organization) {
+            return [];
+        }
+
+        $db = Database::getInstance();
+        return $db->query(
+            "SELECT * FROM packages WHERE organization_id = ? ORDER BY created_at DESC LIMIT ?",
+            [$organization->id, $limit]
+        )->fetchAll(\PDO::FETCH_CLASS, 'LorPHP\Models\Package');
     }
 }
