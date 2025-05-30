@@ -4,8 +4,7 @@
  */
 $this->setLayout('base');
 ?>
-<!-- Add padding to account for fixed navbar -->
-<div class="min-h-screen bg-[#09090b] pt-16">
+<div class="min-h-screen bg-[#09090b]">
     <div class="max-w-[95rem] mx-auto py-8 px-4 sm:px-6 lg:px-8 xl:px-10 space-y-8">
         <?php
         // Prepare stats data for the component

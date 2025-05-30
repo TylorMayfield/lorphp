@@ -14,6 +14,14 @@ class RoleMiddleware {
     }
 
     /**
+     * Get the current authenticated user
+     * @return \LorPHP\Models\User|null
+     */
+    public static function getCurrentUser(): ?\LorPHP\Models\User {
+        return Application::getInstance()->getState('user');
+    }
+
+    /**
      * Check if user has specified role
      * @param string $role
      * @return bool

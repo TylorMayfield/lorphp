@@ -39,6 +39,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // Only run if the View Transitions API is supported and we're not in an iframe
     if (!document.startViewTransition || window.self !== window.top) return;
 
+    // MOBILE MENU PATCH: Toggle mobile menu reliably on tap
+    var menuBtn = document.querySelector('.mobile-menu-button');
+    var mobileMenu = document.querySelector('.mobile-menu');
+    if (menuBtn && mobileMenu) {
+        menuBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            mobileMenu.classList.toggle('hidden');
+        });
+        // Hide menu when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!mobileMenu.classList.contains('hidden') && !mobileMenu.contains(e.target) && !menuBtn.contains(e.target)) {
+                mobileMenu.classList.add('hidden');
+            }
+        });
+    }
+
     // Wait for the initial page load to complete
     window.addEventListener('load', () => {
         // Handle all link clicks

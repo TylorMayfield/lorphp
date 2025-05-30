@@ -43,13 +43,20 @@ class AuthController extends Controller
     {
         $registerController = new RegisterController();
         return $registerController->index();
-    }
-
-    /**
+    }    /**
      * Logout action
      */
     public function logout() 
     {
+        // Start session if not already started
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        // Clear session data
+        $_SESSION = array();
+        session_destroy();
+
         // Clear JWT token
         setcookie('jwt', '', [
             'expires' => 1,
@@ -58,6 +65,9 @@ class AuthController extends Controller
             'samesite' => 'Strict',
             'secure' => isset($_SERVER['HTTPS'])
         ]);
+
+        // Clear application state
+        $this->app->setState('user', null);
         
         return $this->redirectTo($this->config['routes']['logout_redirect'] ?? '/');
     }

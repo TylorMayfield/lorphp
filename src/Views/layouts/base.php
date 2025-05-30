@@ -15,6 +15,10 @@ use LorPHP\Core\View;
     
     <!-- Critical rendering styles -->
     <style>
+        [x-cloak] { 
+            display: none !important; 
+        }
+        
         /* Prevent FOUC */
         html {
             background-color: #0a0a0c;
@@ -55,6 +59,9 @@ use LorPHP\Core\View;
     <!-- Add Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
+    <!-- Add Alpine.js for interactive components -->
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
     <!-- Add base styles -->
     <link rel="stylesheet" href="/css/transitions.css">
     
@@ -62,12 +69,13 @@ use LorPHP\Core\View;
     <link rel="manifest" href="/manifest.json">
     <link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
 </head>
-<body class="antialiased text-neutral-100 flex flex-col min-h-screen">
-    <!-- Navigation -->
+<body class="antialiased text-neutral-100 flex flex-col min-h-screen">    <!-- Navigation -->
     <?php $this->partial('partials/navigation'); ?>
 
     <!-- Page content -->
-    <?php echo $content; ?>
+    <main class="main-content flex-grow pt-20">
+        <?php echo $content; ?>
+    </main>
 
     <!-- Footer -->
     <?php $this->partial('partials/footer'); ?>

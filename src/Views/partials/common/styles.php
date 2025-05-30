@@ -27,11 +27,9 @@
             rgba(255, 255, 255, 0.05) 100%
         );
         z-index: -1;
-    }
-
-    /* Adjust main content to account for fixed navbar */
-    body {
-        padding-top: 4rem;
+    }    /* Adjust main content to account for fixed navbar */
+    .main-content {
+        padding-top: 4rem; /* h-16 = 4rem */
     }
     .debug-bar {
         background: rgba(0, 0, 0, 0.8);
