@@ -213,18 +213,18 @@ EOD;
     private static function handleArrayReturnType(string $returnType): array {
         $phpReturnType = 'array';
         $docReturnType = $returnType;
-        
+
         // If the type ends in [] or is itself an array, use array for PHP return type
-        if (str_contains($returnType, '[]') || $returnType === 'array') {
-            if (str_ends_with($returnType, '[]')) {
+        if ((is_string($returnType) && strpos($returnType, '[]') !== false) || $returnType === 'array') {
+            if (is_string($returnType) && substr($returnType, -2) === '[]') {
                 $itemType = substr($returnType, 0, -2);
-                $docReturnType = "$itemType[]";
+                $docReturnType = $itemType . '[]';
             }
         } else {
             $phpReturnType = $returnType;
         }
-        
-        return [$phpReturnType, $docReturnType];
+
+        return array($phpReturnType, $docReturnType);
     }
 
     private static function generateCustomRelationshipMethods(array $fields): string {

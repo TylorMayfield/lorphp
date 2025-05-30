@@ -5,16 +5,65 @@ use LorPHP\Core\View;
 use LorPHP\Core\Router;
 
 class Application {
+    /**
+     * Get the authorization gate instance (singleton)
+     */
+    public function getGate(): Gate {
+        return $this->container->make(Gate::class);
+    }
+    /**
+     * Get the translator instance (singleton)
+     */
+    public function getTranslator(): Translator {
+        return $this->container->make(Translator::class);
+    }
+    /**
+     * Get the cache instance (singleton)
+     */
+    public function getCache(): Cache {
+        return $this->container->make(Cache::class);
+    }
     private static $instance = null;
     private $state = [];
     private $config = [];
     private $router;
-    
+    private $container;
+
     public function __construct() {
         self::$instance = $this;
         $this->loadConfig();
         $this->initializeDebug();
+        $this->container = new Container();
         $this->router = new Router();
+        // Register EventDispatcher as a singleton in the container
+        $this->container->singleton(EventDispatcher::class, function() {
+            return new EventDispatcher();
+        });
+        // Register Cache as a singleton in the container
+        $this->container->singleton(Cache::class, function() {
+            return new Cache();
+        });
+        // Register Translator as a singleton in the container
+        $this->container->singleton(Translator::class, function() {
+            $locale = $this->getConfig('app.locale', 'en');
+            return new Translator($locale);
+        });
+        // Register Gate as a singleton in the container
+        $this->container->singleton(Gate::class, function() {
+            return new Gate();
+        });
+    }
+    /**
+     * Get the event dispatcher instance
+     */
+    public function getEvents(): EventDispatcher {
+        return $this->container->make(EventDispatcher::class);
+    }
+    /**
+     * Get the DI container instance
+     */
+    public function getContainer(): Container {
+        return $this->container;
     }
 
     public static function getInstance() {

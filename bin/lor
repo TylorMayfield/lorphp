@@ -1,5 +1,21 @@
+
 #!/usr/bin/env php
 <?php
+// --- LorPHP Core Application and Event Dispatcher Integration ---
+require_once __DIR__ . '/../src/Core/Bootstrap.php';
+use LorPHP\Core\Application;
+
+// Instantiate the application (for DI, events, etc.)
+$app = new Application();
+
+// Event test command
+if ($argc > 1 && $argv[1] === 'event:test') {
+    $app->getEvents()->listen('test', function($msg) {
+        echo "Event received: $msg\n";
+    });
+    $app->getEvents()->dispatch('test', 'Hello from event!');
+    exit(0);
+}
 
 // DB reset command: drops and recreates the SQLite database, then runs all migrations
 if ($argc > 1 && $argv[1] === 'db:reset') {
@@ -186,6 +202,7 @@ function showHelp() {
     echo "  route:add METHOD PATH HANDLER   Add a route (e.g., GET /clients ClientController@index)\n";
     echo "  route:list                 List all routes\n";
     echo "  route:remove PATH          Remove a route by path\n";
+    echo "  event:test                 Dispatch a test event\n";
     echo "  help                       Show this help message\n\n";
     echo "Examples:\n";
     echo "  ./lor migrate:create add_users_table\n";
