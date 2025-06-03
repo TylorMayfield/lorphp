@@ -8,7 +8,9 @@
     "test:e2e": "cypress run",
     "test:ci": "start-server-and-test serve http://localhost:8000 test",
     "serve": "php -S localhost:8000 -t public",
-    "dev": "php -S localhost:8000 -t public",
+    "dev": "cross-env APP_ENV=dev APP_DEBUG=1 npm-run-all --parallel --print-label dev:php dev:hotreload",
+    "dev:php": "php -S localhost:8000 -t public",
+    "dev:hotreload": "node dev-hot-reload-server.js",
     "start": "php -S 0.0.0.0:${PORT:-8080} -t public",
     "migrate": "php bin/lor migrate:run",
     "migrate:rollback": "php bin/lor migrate:rollback",
@@ -37,10 +39,13 @@
   "description": "",
   "devDependencies": {
     "@testing-library/cypress": "^10.0.1",
+    "cross-env": "^7.0.3",
     "cypress": "^13.6.0",
+    "npm-run-all": "^4.1.5",
     "start-server-and-test": "^2.0.3"
   },
   "dependencies": {
-    "sharp": "^0.34.1"
+    "sharp": "^0.34.1",
+    "ws": "^8.18.2"
   }
 }

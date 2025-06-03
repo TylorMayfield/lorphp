@@ -83,6 +83,10 @@ use LorPHP\Core\View;
     <!-- Page scripts -->
     <script src="/js/transitions.js" defer></script>
     <script src="/js/offline-handler.js" defer></script>
+    <!-- Hot Reload Client (dev only) -->
+    <?php if (getenv('APP_ENV') === 'dev' || getenv('APP_DEBUG')): ?>
+    <script src="/js/hot-reload-client.js" defer></script>
+    <?php endif; ?>
     <script>
         // Add render-ready class once DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
