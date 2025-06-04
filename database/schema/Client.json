@@ -1,0 +1,27 @@
+{
+  "description": "Represents a client",
+  "fields": {
+    "name": { "type": "String" },
+    "email": { "type": "String", "attributes": ["@unique"] },
+    "organizationId": { "type": "String", "isForeignKey": true },
+    "organization": {
+      "type": "Organization",
+      "relationship": "many-to-one",
+      "relationDetails": {
+        "fields": ["organizationId"],
+        "references": ["id"]
+      }
+    },
+    "contacts": {
+      "type": "Contact",
+      "relationship": "one-to-many",
+      "description": "Contacts for this client"
+    },
+    "packages": {
+      "type": "Package",
+      "relationship": "many-to-many",
+      "description": "Packages associated with this client"
+    }
+  },
+  "useBakedInFields": true
+}

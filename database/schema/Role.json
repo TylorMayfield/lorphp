@@ -1,0 +1,30 @@
+{
+  "description": "Represents a user role in the system",
+  "fields": {
+    "name": {
+      "type": "String",
+      "attributes": ["@unique"],
+      "description": "The name of the role"
+    },
+    "description": {
+      "type": "String",
+      "nullable": true,
+      "description": "Description of the role's purpose and permissions"
+    },
+    "permissions": {
+      "type": "Permission",
+      "relationship": "many-to-many",
+      "description": "Permissions associated with this role"
+    },
+    "users": {
+      "type": "User",
+      "relationship": "one-to-many",
+      "description": "Users with this role",
+      "relationDetails": {
+        "fields": ["role_id"],
+        "references": ["id"]
+      }
+    }
+  },
+  "useBakedInFields": true
+}

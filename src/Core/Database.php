@@ -292,20 +292,26 @@ class Database {
         foreach ($tableInfo as $column) {
             $columnTypes[$column['name']] = $column['type'];
         }
-        
+
         $fields = implode(', ', array_keys($data));
         $placeholders = implode(', ', array_fill(0, count($data), '?'));
         $sql = "INSERT INTO {$table} ({$fields}) VALUES ({$placeholders})";
-        
+
         // Convert values based on column types
         $values = [];
         foreach ($data as $field => $value) {
             $type = $columnTypes[$field] ?? null;
             $values[] = $this->convertValueForSQLite($value, $type);
         }
-        
+
+        error_log('[Database::insert] SQL: ' . $sql . ' | Values: ' . print_r($values, true));
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($values);
+
+        // If an id was provided, return it; otherwise, return lastInsertId
+        if (isset($data['id']) && $data['id']) {
+            return $data['id'];
+        }
         return $this->pdo->lastInsertId();
     }
 

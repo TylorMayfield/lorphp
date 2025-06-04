@@ -1,0 +1,12 @@
+{
+  "description": "Represents a permission that can be assigned to users/roles",
+  "fields": {
+    "name": { "type": "String", "attributes": ["@unique"] },
+    "users": {
+      "type": "User",
+      "relationship": "many-to-many",
+      "description": "Users who have this permission"
+    }
+  },
+  "useBakedInFields": true
+}

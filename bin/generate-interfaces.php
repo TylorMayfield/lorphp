@@ -4,22 +4,42 @@
 // Generates PHP interfaces from schema.json
 
 $interfacesDir = __DIR__ . '/../src/Interfaces';
-$schemaFile = __DIR__ . '/../database/schema.json';
+
+$schemaDir = __DIR__ . '/../database/schema/';
+$bakedInFieldsFile = $schemaDir . 'bakedInFieldsDefinition.json';
 
 if (!is_dir($interfacesDir)) {
     mkdir($interfacesDir, 0777, true);
 }
 
-// Load schema
-$schemaContent = file_get_contents($schemaFile);
-if ($schemaContent === false) {
-    die("Error: Could not read schema file: $schemaFile\n");
+// Load baked-in fields
+if (!file_exists($bakedInFieldsFile)) {
+    die("Error: Could not find bakedInFieldsDefinition.json in $schemaDir\n");
+}
+$bakedInFieldsContent = file_get_contents($bakedInFieldsFile);
+$bakedInFields = json_decode($bakedInFieldsContent, true);
+if (json_last_error() !== JSON_ERROR_NONE) {
+    die("Error parsing JSON from $bakedInFieldsFile: " . json_last_error_msg() . "\n");
 }
 
-$schema = json_decode($schemaContent, true);
-if (json_last_error() !== JSON_ERROR_NONE) {
-    die("Error parsing JSON from $schemaFile: " . json_last_error_msg() . "\n");
+// Load all entity schemas
+$entities = [];
+$files = glob($schemaDir . '*.json');
+foreach ($files as $file) {
+    if (basename($file) === 'bakedInFieldsDefinition.json') continue;
+    $content = file_get_contents($file);
+    $entity = json_decode($content, true);
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        die("Error parsing JSON from $file: " . json_last_error_msg() . "\n");
+    }
+    $entityName = basename($file, '.json');
+    $entities[$entityName] = $entity;
 }
+
+$schema = [
+    'bakedInFieldsDefinition' => $bakedInFields,
+    'entities' => $entities
+];
 
 function generateFileHeader() {
     $date = date('Y-m-d H:i:s');

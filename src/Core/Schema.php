@@ -53,7 +53,12 @@ class Schema {
             $this->alterCommands[] = "ALTER TABLE {$this->tableName} ADD COLUMN {$name} TEXT" . ($nullable ? '' : ' NOT NULL');
             return $this;
         }
-        $this->columnGroups['regular'][] = "{$name} TEXT" . ($nullable ? '' : ' NOT NULL');
+        // If this is the id column, make it PRIMARY KEY
+        if ($name === 'id') {
+            $this->columnGroups['primary'][] = "id TEXT PRIMARY KEY NOT NULL";
+        } else {
+            $this->columnGroups['regular'][] = "{$name} TEXT" . ($nullable ? '' : ' NOT NULL');
+        }
         $this->trackLastColumn($name);
         return $this;
     }

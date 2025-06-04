@@ -1,0 +1,45 @@
+{
+  "description": "Represents a user in the system",
+  "fields": {
+    "name": { "type": "String" },
+    "email": { "type": "String", "attributes": ["@unique"] },
+    "password": { "type": "String" },
+    "role_id": { "type": "String", "nullable": true },
+    "organization_id": { "type": "String", "isForeignKey": true },
+    "role": {
+      "type": "Role",
+      "relationship": "many-to-one",
+      "relationDetails": {
+        "fields": ["role_id"],
+        "references": ["id"]
+      },
+      "description": "The role of this user"
+    },
+    "organization": {
+      "type": "Organization",
+      "relationship": "many-to-one",
+      "relationDetails": {
+        "fields": ["organization_id"],
+        "references": ["id"]
+      },
+      "description": "The organization this user belongs to",
+      "methods": {
+        "getOrganizationClients": {
+          "returns": "Client[]",
+          "description": "Get all clients in the user's organization",
+          "filter": true
+        },
+        "getOrganizationPackages": {
+          "returns": "Package[]",
+          "description": "Get all packages in the user's organization"
+        }
+      }
+    },
+    "clients": {
+      "type": "Client",
+      "relationship": "many-to-many",
+      "description": "Clients associated with this user"
+    }
+  },
+  "useBakedInFields": true
+}

@@ -1,0 +1,56 @@
+{
+  "description": "Rate limiting records for API and sensitive endpoints",
+  "fields": {
+    "ipAddress": {
+      "type": "String",
+      "description": "IP address of the client"
+    },
+    "endpoint": {
+      "type": "String",
+      "description": "The endpoint being rate limited"
+    },
+    "requests": {
+      "type": "Integer",
+      "default": 1,
+      "description": "Number of requests in the current window"
+    },
+    "windowStart": {
+      "type": "DateTime",
+      "attributes": ["@default(now())"],
+      "description": "When this rate limit window started"
+    },
+    "windowDuration": {
+      "type": "Integer",
+      "default": 3600,
+      "description": "Duration of rate limit window in seconds"
+    },
+    "maxRequests": {
+      "type": "Integer",
+      "default": 1000,
+      "description": "Maximum number of requests allowed in window"
+    },
+    "userId": {
+      "type": "String",
+      "nullable": true,
+      "description": "Associated user if authenticated"
+    },
+    "blocked": {
+      "type": "Boolean",
+      "attributes": ["@default(false)"],
+      "description": "Whether requests are blocked for this IP/endpoint"
+    }
+  },
+  "useBakedInFields": true,
+  "indexes": [
+    {
+      "fields": ["ipAddress", "endpoint"],
+      "type": "unique",
+      "name": "idx_rate_limits_ip_endpoint"
+    },
+    {
+      "fields": ["windowStart"],
+      "type": "index",
+      "name": "idx_rate_limits_window"
+    }
+  ]
+}
