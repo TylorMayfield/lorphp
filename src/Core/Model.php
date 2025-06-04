@@ -335,6 +335,11 @@ abstract class Model {
         return $results;
     }    public function fill(array $attributes): void {
         foreach ($attributes as $key => $value) {
+            // Always map 'id' directly
+            if ($key === 'id') {
+                $this->attributes['id'] = $value;
+                continue;
+            }
             // Convert snake_case to camelCase for model properties
             $modelKey = lcfirst(str_replace('_', '', ucwords($key, '_')));
             if (in_array($modelKey, static::$fillable)) {
@@ -342,6 +347,7 @@ abstract class Model {
             }
         }
         $this->exists = true;
+        error_log('[Model::fill] After fill, attributes: ' . print_r($this->attributes, true));
     }    // Helper method to get class basename
     protected static function class_basename($class): string {
         $class = is_object($class) ? get_class($class) : $class;

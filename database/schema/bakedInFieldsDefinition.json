@@ -1,0 +1,27 @@
+{
+  "id": {
+    "type": "String",
+    "attributes": ["@id", "@default(uuid())"],
+    "description": "Unique identifier for the record"
+  },
+  "created_at": {
+    "type": "DateTime",
+    "attributes": ["@default(now())"],
+    "description": "Timestamp of when the record was created"
+  },
+  "updated_at": {
+    "type": "DateTime",
+    "attributes": ["@updatedAt"],
+    "description": "Timestamp of when the record was last updated"
+  },
+  "is_active": {
+    "type": "Boolean",
+    "attributes": ["@default(true)"],
+    "description": "Whether the record is active"
+  },
+  "modified_by": {
+    "type": "String",
+    "nullable": true,
+    "description": "Identifier of the user who last modified the record"
+  }
+}

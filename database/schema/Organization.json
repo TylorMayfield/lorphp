@@ -1,0 +1,26 @@
+{
+  "description": "Represents an organization",
+  "fields": {
+    "name": { "type": "String" },
+    "is_active": {
+      "type": "Boolean",
+      "attributes": ["@default(true)"],
+      "description": "Whether the organization is active"
+    },
+    "users": {
+      "type": "User",
+      "relationship": "one-to-many",
+      "description": "Users belonging to this organization",
+      "relationDetails": {
+        "fields": ["organization_id"],
+        "references": ["id"]
+      }
+    },
+    "clients": {
+      "type": "Client",
+      "relationship": "one-to-many",
+      "description": "Clients belonging to this organization"
+    }
+  },
+  "useBakedInFields": true
+}

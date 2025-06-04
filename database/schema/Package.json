@@ -1,0 +1,14 @@
+{
+  "description": "Represents a service package",
+  "fields": {
+    "name": {
+      "type": "String"
+    },
+    "clients": {
+      "type": "Client",
+      "relationship": "many-to-many",
+      "description": "Clients subscribed to this package"
+    }
+  },
+  "useBakedInFields": true
+}

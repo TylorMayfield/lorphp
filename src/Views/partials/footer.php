@@ -32,9 +32,9 @@ use LorPHP\Core\RoleMiddleware;
             <div>
                 <h3 class="text-white font-semibold mb-4">Resources</h3>
                 <ul class="space-y-2">
-                    <li><a href="https://github.com/yourusername/lorphp" target="_blank" rel="noopener noreferrer" class="text-[#a1a1aa] hover:text-white transition-colors">GitHub</a></li>
-                    <li><a href="https://github.com/yourusername/lorphp/wiki" target="_blank" rel="noopener noreferrer" class="text-[#a1a1aa] hover:text-white transition-colors">Documentation</a></li>
-                    <li><a href="https://github.com/yourusername/lorphp/discussions" target="_blank" rel="noopener noreferrer" class="text-[#a1a1aa] hover:text-white transition-colors">Community</a></li>
+                    <li><a href="https://github.com/tylormayfield/lorphp" target="_blank" rel="noopener noreferrer" class="text-[#a1a1aa] hover:text-white transition-colors">GitHub</a></li>
+                    <li><a href="https://github.com/tylormayfield/lorphp/wiki" target="_blank" rel="noopener noreferrer" class="text-[#a1a1aa] hover:text-white transition-colors">Documentation</a></li>
+                    <li><a href="https://github.com/tylormayfield/lorphp/discussions" target="_blank" rel="noopener noreferrer" class="text-[#a1a1aa] hover:text-white transition-colors">Community</a></li>
                 </ul>
             </div>
         </div>

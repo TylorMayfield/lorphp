@@ -15,7 +15,9 @@ abstract class Migration {
     protected function createTable($name, $callback) {
         $schema = new Schema($name);
         $callback($schema);
-        $this->db->exec($schema->toSql());
+        $sql = $schema->toSql();
+        error_log('[Migration] Creating table ' . $name . ' with SQL: ' . $sql);
+        $this->db->exec($sql);
     }
     
     protected function alterTable($name, $callback) {

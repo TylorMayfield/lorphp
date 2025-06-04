@@ -1,0 +1,14 @@
+{
+  "description": "Represents a contact person for a client",
+  "fields": {
+    "name": { "type": "String" },
+    "email": { "type": "String" },
+    "clientId": { "type": "String", "isForeignKey": true },
+    "client": {
+      "type": "Client",
+      "relationship": "many-to-one",
+      "relationDetails": { "fields": ["clientId"], "references": ["id"] }
+    }
+  },
+  "useBakedInFields": true
+}

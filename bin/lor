@@ -43,54 +43,71 @@ if ($argc > 1 && $argv[1] === 'generate') {
         }
     }
 
-    $schemaFile = __DIR__ . '/../database/schema.json'; // Changed to .json
-    if (!file_exists($schemaFile)) {
-        echo "database/schema.json not found!\n";
+    // Merge all schema files from schema/ directory
+    $schemaDir = __DIR__ . '/../database/schema/';
+    $bakedInFieldsFile = $schemaDir . 'bakedInFieldsDefinition.json';
+    if (!is_dir($schemaDir)) {
+        echo "Schema directory not found: $schemaDir\n";
         exit(1);
     }
+    if (!file_exists($bakedInFieldsFile)) {
+        echo "bakedInFieldsDefinition.json not found in $schemaDir\n";
+        exit(1);
+    }
+    $bakedInFieldsContent = file_get_contents($bakedInFieldsFile);
+    $bakedInFields = json_decode($bakedInFieldsContent, true);
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        echo "Error parsing JSON from $bakedInFieldsFile: " . json_last_error_msg() . "\n";
+        exit(1);
+    }
+    $entities = [];
+    $files = glob($schemaDir . '*.json');
+    foreach ($files as $file) {
+        if (basename($file) === 'bakedInFieldsDefinition.json') continue;
+        $content = file_get_contents($file);
+        $entity = json_decode($content, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            echo "Error parsing JSON from $file: " . json_last_error_msg() . "\n";
+            exit(1);
+        }
+        $entityName = basename($file, '.json');
+        $entities[$entityName] = $entity;
+    }
+    $schema = [
+        'bakedInFieldsDefinition' => $bakedInFields,
+        'entities' => $entities
+    ];
+    // Write merged schema to a temp file for generator compatibility
+    $tmpSchemaFile = sys_get_temp_dir() . '/lorphp_merged_schema.json';
+    file_put_contents($tmpSchemaFile, json_encode($schema, JSON_PRETTY_PRINT));
 
     // 1. Generate migrations based on schema diff
     $migrationScript = __DIR__ . '/generate-migrations.php';
     if (file_exists($migrationScript)) {
         echo "Generating migrations...\n";
-        passthru("php $migrationScript --schema $schemaFile"); 
+        passthru("php $migrationScript --schema $tmpSchemaFile"); 
     }
 
     // 2. Generate all interfaces
     $interfaceScript = __DIR__ . '/generate-interfaces.php';
     if (file_exists($interfaceScript)) {
         echo "Generating interfaces...\n";
-        passthru("php $interfaceScript --schema $schemaFile");
+        passthru("php $interfaceScript --schema $tmpSchemaFile");
     }
 
     // 3. Parse schema to get entity names
     echo "Loading entities from schema...\n";
-    
-    $schemaContent = file_get_contents($schemaFile);
-    if ($schemaContent === false) {
-        echo "Error: Could not read schema file: $schemaFile\n";
-        exit(1);
-    }
-
-    $schemaData = json_decode($schemaContent, true);
-    if (json_last_error() !== JSON_ERROR_NONE) {
-        echo "Error parsing JSON from $schemaFile: " . json_last_error_msg() . "\n";
-        exit(1);
-    }
-
+    $schemaData = $schema;
     $entityNames = [];
     if (isset($schemaData['entities']) && is_array($schemaData['entities'])) {
         $entityNames = array_keys($schemaData['entities']);
     }
-    
     if (empty($entityNames)) {
-        echo "No entities found in $schemaFile. Skipping model and controller generation.\n";
+        echo "No entities found in schema directory. Skipping model and controller generation.\n";
     } else {
         echo "Found entities: " . implode(', ', $entityNames) . "\n";
-
         $modelScript = __DIR__ . '/generate-model.php';
         $controllerScript = __DIR__ . '/generate-controller.php';
-
         // 4. For each entity, generate model and controller
         foreach ($entityNames as $entityName) {
             if (!is_string($entityName) || empty($entityName)) {
@@ -98,25 +115,22 @@ if ($argc > 1 && $argv[1] === 'generate') {
                 continue;
             }
             echo "Processing entity: $entityName\n";
-
             // a. Generate model for the entity
             if (file_exists($modelScript)) {
                 echo "  Generating model for $entityName...\n";
-                $cmd = "php $modelScript \"$entityName\" --schema \"$schemaFile\"";
+                $cmd = "php $modelScript \"$entityName\" --schema \"$tmpSchemaFile\"";
                 if ($force) {
                     $cmd .= " --force";
                 }
                 passthru($cmd);
             }
-
             // b. Generate controller for the entity
             if (file_exists($controllerScript)) {
                 echo "  Generating controller for $entityName...\n";
-                passthru("php $controllerScript \"$entityName\" --schema $schemaFile");
+                passthru("php $controllerScript \"$entityName\" --schema $tmpSchemaFile");
             }
         }
     }
-
     echo "Generation process completed.\n";
     exit(0);
 }
