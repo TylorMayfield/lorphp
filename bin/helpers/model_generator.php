@@ -235,11 +235,23 @@ EOD;
                 continue;
             }
 
+            // Try to get the foreign key for this relationship
+            $foreignKey = null;
+            if (isset($details['relationDetails']['fields'][0])) {
+                $foreignKey = $details['relationDetails']['fields'][0];
+            } elseif (isset($details['foreignKey'])) {
+                $foreignKey = $details['foreignKey'];
+            }
+
             foreach ($details['methods'] as $methodName => $methodDetails) {
                 $returnType = $methodDetails['returns'] ?? 'array';
                 [$phpReturnType, $docReturnType] = self::handleArrayReturnType($returnType);
                 $description = $methodDetails['description'] ?? '';
                 $filter = $methodDetails['filter'] ?? false;
+
+                $relationLoad = $foreignKey
+                    ? "\$this->loadRelation('{$field}', {$field}::class, '{$foreignKey}');"
+                    : "\$this->loadRelation('{$field}', {$field}::class);";
 
                 if ($filter) {
                     $methods[] = <<<PHP
@@ -252,7 +264,7 @@ EOD;
     public function {$methodName}(array \$filters = []): {$phpReturnType} 
     {
         if (!isset(\$this->relations['{$field}'])) {
-            \$this->loadRelation('{$field}', {$field}::class);
+            {$relationLoad}
         }
         
         if (!isset(\$this->relations['{$field}'])) {
@@ -285,7 +297,7 @@ PHP;
     public function {$methodName}(): {$phpReturnType} 
     {
         if (!isset(\$this->relations['{$field}'])) {
-            \$this->loadRelation('{$field}', {$field}::class);
+            {$relationLoad}
         }
         
         if (!isset(\$this->relations['{$field}'])) {

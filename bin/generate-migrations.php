@@ -8,19 +8,45 @@ function camelToSnake($input) {
 }
 
 function parseSchema($schemaPath) {
-    $schemaJson = file_get_contents($schemaPath);
-    $schema = json_decode($schemaJson, true);
-    if (json_last_error() !== JSON_ERROR_NONE) {
-        echo "Error parsing JSON schema: " . json_last_error_msg() . "\n";
-        exit(1);
+    // If a directory is provided, combine all .json files (except README and snapshot) into a single schema
+    if (is_dir($schemaPath)) {
+        $schemaFiles = glob(rtrim($schemaPath, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . '*.json');
+        $entities = [];
+        $bakedInFieldsDefinition = [];
+        foreach ($schemaFiles as $file) {
+            $base = basename($file);
+            if ($base === 'bakedInFieldsDefinition.json' || $base === 'README.md') {
+                if ($base === 'bakedInFieldsDefinition.json') {
+                    $bakedInFieldsDefinition = json_decode(file_get_contents($file), true);
+                }
+                continue;
+            }
+            $entityName = basename($file, '.json');
+            $entityData = json_decode(file_get_contents($file), true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                echo "Error parsing JSON schema file $file: " . json_last_error_msg() . "\n";
+                exit(1);
+            }
+            $entities[$entityName] = $entityData;
+        }
+        $schema = [
+            'entities' => $entities,
+            'bakedInFieldsDefinition' => $bakedInFieldsDefinition
+        ];
+    } else {
+        $schemaJson = file_get_contents($schemaPath);
+        $schema = json_decode($schemaJson, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            echo "Error parsing JSON schema: " . json_last_error_msg() . "\n";
+            exit(1);
+        }
     }
 
     $models = [];
     foreach ($schema['entities'] as $modelName => $modelDef) {
         $models[$modelName] = [];
-        
         // Add baked-in fields if specified
-        if (isset($modelDef['useBakedInFields']) && $modelDef['useBakedInFields']) {
+        if (isset($modelDef['useBakedInFields']) && $modelDef['useBakedInFields'] && isset($schema['bakedInFieldsDefinition'])) {
             foreach ($schema['bakedInFieldsDefinition'] as $fieldName => $fieldDef) {
                 if ($fieldDef['type'] === 'DateTime') {
                     $models[$modelName][$fieldName] = ['type' => 'timestamp'];
@@ -34,24 +60,20 @@ function parseSchema($schemaPath) {
                 }
             }
         }
-        
         // Add model-specific fields
         foreach ($modelDef['fields'] as $fieldName => $fieldDef) {
             if (isset($fieldDef['relationship'])) {
                 // Skip relationship fields as they don't map directly to columns
                 continue;
             }
-
             $models[$modelName][$fieldName] = [
                 'type' => strtolower($fieldDef['type']),
                 'nullable' => $fieldDef['nullable'] ?? false,
             ];
-
             // Handle attributes
             if (isset($fieldDef['attributes'])) {
                 $models[$modelName][$fieldName]['attributes'] = $fieldDef['attributes'];
             }
-
             // Handle foreign keys
             if (isset($fieldDef['isForeignKey']) && $fieldDef['isForeignKey']) {
                 $models[$modelName][$fieldName]['isForeignKey'] = true;
@@ -130,12 +152,13 @@ function generateFieldCode($field, $fieldDef) {
 }
 
 // MAIN
+
 $options = getopt('', ['schema:']);
 $schemaPath = $options['schema'] ?? 'database/schema.json';
 $snapshotPath = getSnapshotPath($schemaPath);
 
-if (!file_exists($schemaPath)) {
-    echo "Schema file not found: $schemaPath\n";
+if (!file_exists($schemaPath) && !is_dir($schemaPath)) {
+    echo "Schema file or directory not found: $schemaPath\n";
     exit(1);
 }
 

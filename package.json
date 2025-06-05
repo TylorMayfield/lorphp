@@ -16,7 +16,7 @@
     "migrate:rollback": "php bin/lor migrate:rollback",
     "migrate:status": "php bin/lor migrate:status",
     "migrate:create": "php bin/lor migrate:create",
-    "migrate:reset": "powershell -Command \"Remove-Item -Path database/schema.json.snapshot -Force -ErrorAction SilentlyContinue; Remove-Item -Path database/migrations/* -Force -ErrorAction SilentlyContinue; php bin/lor generate; php bin/lor db:reset; php bin/seed.php\"",
+    "migrate:reset": "powershell -Command \"Remove-Item -Path database/schema.json.snapshot -Force -ErrorAction SilentlyContinue; Remove-Item -Path database/migrations/* -Force -ErrorAction SilentlyContinue; php bin/generate-migrations.php --schema database/schema; php bin/lor generate; php bin/lor db:reset; php bin/seed.php\"",
     "lor:help": "php bin/lor help",
     "lor:event:test": "php bin/lor event:test",
     "lor:make:controller": "php bin/lor make:controller",
