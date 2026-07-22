@@ -45,7 +45,7 @@
     "start-server-and-test": "^2.0.12"
   },
   "dependencies": {
-    "sharp": "^0.34.2",
+    "sharp": "^0.35.3",
     "ws": "^8.18.2"
   }
 }
